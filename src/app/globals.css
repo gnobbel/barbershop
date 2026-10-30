@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bone: #f4f0e8;
+  --color-paper: #fbf9f5;
+  --color-ink: #1f1c19;
+  --color-muted: #6e665d;
+  --color-faint: #a39a8f;
+  --color-line: #e3dcd1;
+  --color-line-strong: #cfc6b8;
+  --color-clay: #8b6a4f;
+  --color-olive: #4a4a3a;
+  --color-danger: #8f3b2e;
+
+  --font-serif: "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+
+  --radius-xs: 2px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--color-bone);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-clay) 25%, transparent);
+  }
+  :focus-visible {
+    outline: 1px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer components {
+  /* Small, letter-spaced label: the quiet voice of the page. */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+  .display {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    line-height: 1.05;
+    /* Cormorant's old-style "1" reads as "I"; lining figures keep dates legible. */
+    font-variant-numeric: lining-nums;
+  }
+  .rule {
+    border: 0;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 48px;
+    padding: 0 1.6rem;
+    border: 1px solid var(--color-ink);
+    border-radius: var(--radius-xs);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition:
+      background-color 200ms ease,
+      color 200ms ease,
+      border-color 200ms ease;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .btn-primary:hover {
+    background: var(--color-olive);
+    border-color: var(--color-olive);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-ink);
+    border-color: var(--color-line-strong);
+  }
+  .btn-ghost:hover {
+    border-color: var(--color-ink);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .link {
+    text-decoration: underline;
+    text-decoration-color: var(--color-line-strong);
+    text-underline-offset: 4px;
+    transition: text-decoration-color 200ms ease;
+  }
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .field {
+    display: block;
+  }
+  .field > span {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .input {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.7rem 0.9rem;
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xs);
+    color: var(--color-ink);
+    transition: border-color 200ms ease;
+  }
+  .input::placeholder {
+    color: var(--color-faint);
+  }
+  .input:hover {
+    border-color: var(--color-line-strong);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-ink);
+  }
+  textarea.input {
+    min-height: 96px;
+    resize: vertical;
+  }
+
+  .card {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xs);
+  }
+
+  .tabular {
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  .fade-in {
+    animation: fade-in 500ms ease both;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
