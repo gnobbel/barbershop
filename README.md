@@ -4,7 +4,7 @@ A small, private booking site for a barber who cuts for friends. You set your ho
 
 ## What it does
 
-**For friends**, at `/book`:
+**For friends**, on the home page (`/book` also works):
 - Pick a day, pick a time, and leave a name, phone and email.
 - A confirmation email arrives with a calendar invite (`.ics`), a Google Calendar link and a personal "manage booking" link.
 - **A reminder arrives 24 hours before** the appointment.
@@ -68,7 +68,7 @@ All of these have free tiers that comfortably cover this.
 5. **Set up.** Open `/admin` and sign in.
    - Fill in **Settings**: your name, address, price and contact.
    - Add your **Availability**.
-   - Share `/book` with your friends.
+   - Share your site link with friends. Settings has "Copy link" and "Share on WhatsApp" buttons.
 
 ## Running locally
 
