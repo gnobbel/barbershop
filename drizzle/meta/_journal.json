@@ -15,6 +15,13 @@
       "when": 1793361353611,
       "tag": "0001_no_double_booking",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793363373323,
+      "tag": "0002_netherlands_defaults",
+      "breakpoints": true
     }
   ]
 }

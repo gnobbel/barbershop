@@ -5,15 +5,17 @@ import { buildIcs, googleCalendarUrl, sequenceFor } from "@/lib/ics";
 import type { EmailMessage } from "./send";
 
 const C = {
-  bone: "#F4F0E8",
-  paper: "#FBF9F5",
-  ink: "#1F1C19",
-  muted: "#6E665D",
-  line: "#E3DCD1",
-  accent: "#8B6A4F",
+  bone: "#F5F2ED",
+  paper: "#FBFAF7",
+  white: "#FFFFFF",
+  chip: "#ECE8E1",
+  ink: "#1F1F1F",
+  muted: "#6B665F",
+  line: "#E6E1D9",
+  go: "#3E9B5F",
 };
-const SERIF = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
-const SANS = "Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+const SANS =
+  "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -33,38 +35,50 @@ function layout(opts: {
   const rows = (opts.rows ?? [])
     .filter(([, v]) => v)
     .map(
-      ([label, value]) => `
+      ([label, value], i) => `
       <tr>
-        <td style="padding:14px 0;border-top:1px solid ${C.line};font:500 11px/1.4 ${SANS};letter-spacing:.14em;text-transform:uppercase;color:${C.muted};width:110px;vertical-align:top;">${esc(label)}</td>
-        <td style="padding:14px 0;border-top:1px solid ${C.line};font:400 15px/1.5 ${SANS};color:${C.ink};">${esc(value).replace(/\n/g, "<br>")}</td>
+        <td style="padding:13px 0;${i ? `border-top:1px solid ${C.line};` : ""}font:500 14px/1.4 ${SANS};color:${C.muted};width:96px;vertical-align:top;">${esc(label)}</td>
+        <td style="padding:13px 0;${i ? `border-top:1px solid ${C.line};` : ""}font:600 15px/1.45 ${SANS};color:${C.ink};text-align:right;">${esc(value).replace(/\n/g, "<br>")}</td>
       </tr>`,
     )
     .join("");
 
-  const actions = (opts.actions ?? [])
-    .map((a) =>
-      a.primary
-        ? `<a href="${esc(a.href)}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 22px;background:${C.ink};color:${C.paper};text-decoration:none;font:500 12px/1 ${SANS};letter-spacing:.14em;text-transform:uppercase;border-radius:2px;">${esc(a.label)}</a>`
-        : `<a href="${esc(a.href)}" style="display:inline-block;margin:0 10px 10px 0;padding:11px 21px;border:1px solid ${C.line};color:${C.ink};text-decoration:none;font:500 12px/1 ${SANS};letter-spacing:.14em;text-transform:uppercase;border-radius:2px;">${esc(a.label)}</a>`,
-    )
-    .join("");
+  const button = (a: { label: string; href: string; primary?: boolean }) =>
+    a.primary
+      ? `<a href="${esc(a.href)}" style="display:inline-block;margin:0 8px 10px 0;padding:14px 24px;background:${C.ink};color:#ffffff;text-decoration:none;font:600 15px/1 ${SANS};border-radius:999px;">${esc(a.label)}</a>`
+      : `<a href="${esc(a.href)}" style="display:inline-block;margin:0 8px 10px 0;padding:13px 23px;background:${C.paper};border:1px solid ${C.line};color:${C.ink};text-decoration:none;font:600 15px/1 ${SANS};border-radius:999px;">${esc(a.label)}</a>`;
+  const actions = (opts.actions ?? []).map(button).join("");
+
+  const initials = s.businessName
+    .replace(/^the\s+/i, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
 
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(opts.heading)}</title></head>
 <body style="margin:0;padding:0;background:${C.bone};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bone};">
-    <tr><td align="center" style="padding:48px 16px;">
+    <tr><td align="center" style="padding:36px 14px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
-        <tr><td style="padding:0 0 28px;font:400 22px/1.2 ${SERIF};color:${C.ink};letter-spacing:.02em;">${esc(s.businessName)}</td></tr>
-        <tr><td style="background:${C.paper};border:1px solid ${C.line};border-radius:2px;padding:40px 36px;">
-          <div style="font:500 11px/1.4 ${SANS};letter-spacing:.18em;text-transform:uppercase;color:${C.accent};margin-bottom:14px;">${esc(opts.eyebrow)}</div>
-          <h1 style="margin:0 0 16px;font:400 32px/1.15 ${SERIF};color:${C.ink};">${esc(opts.heading)}</h1>
-          <p style="margin:0 0 28px;font:400 15px/1.65 ${SANS};color:${C.muted};">${esc(opts.intro)}</p>
-          ${rows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid ${C.line};margin-bottom:28px;">${rows}</table>` : ""}
-          ${actions ? `<div>${actions}</div>` : ""}
-          ${opts.footnote ? `<p style="margin:18px 0 0;font:400 13px/1.6 ${SANS};color:${C.muted};">${esc(opts.footnote)}</p>` : ""}
+        <tr><td style="padding:0 4px 20px;">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td style="width:36px;height:36px;border-radius:999px;background:${C.ink};color:#ffffff;font:700 13px/36px ${SANS};text-align:center;">${esc(initials)}</td>
+            <td style="padding-left:10px;font:700 16px/1 ${SANS};color:${C.ink};letter-spacing:-0.01em;">${esc(s.businessName)}</td>
+          </tr></table>
         </td></tr>
-        <tr><td style="padding:24px 0 0;font:400 12px/1.6 ${SANS};color:${C.muted};">${esc(s.tagline)}</td></tr>
+        <tr><td style="background:${C.paper};border:1px solid ${C.line};border-radius:20px;padding:32px 28px;">
+          <span style="display:inline-block;margin-bottom:16px;padding:5px 12px;border-radius:999px;background:${C.chip};font:600 13px/1.2 ${SANS};color:${C.ink};">${esc(opts.eyebrow)}</span>
+          <h1 style="margin:0 0 10px;font:800 28px/1.15 ${SANS};letter-spacing:-0.03em;color:${C.ink};">${esc(opts.heading)}</h1>
+          <p style="margin:0 0 24px;font:400 15px/1.6 ${SANS};color:${C.muted};">${esc(opts.intro)}</p>
+          ${rows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.white};border:1px solid ${C.line};border-radius:14px;margin-bottom:24px;"><tr><td style="padding:2px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr></table>` : ""}
+          ${actions ? `<div>${actions}</div>` : ""}
+          ${opts.footnote ? `<p style="margin:14px 0 0;font:400 13px/1.6 ${SANS};color:${C.muted};">${esc(opts.footnote)}</p>` : ""}
+        </td></tr>
+        <tr><td style="padding:18px 4px 0;font:400 12px/1.6 ${SANS};color:${C.muted};">${esc(s.businessName)}${s.address ? ` · ${esc(s.address.split("\n")[0])}` : ""}</td></tr>
       </table>
     </td></tr>
   </table>
@@ -199,9 +213,9 @@ export function cancellationEmail(b: Booking, s: Settings, byBarber: boolean): E
       eyebrow: "Cancelled",
       heading: "Appointment cancelled",
       intro,
-      actions: [{ label: "Book another time", href: `${siteUrl()}/book`, primary: true }],
+      actions: [{ label: "Book another time", href: `${siteUrl()}/#book`, primary: true }],
     }),
-    text: text(["Appointment cancelled", "", intro, "", `Book again: ${siteUrl()}/book`]),
+    text: text(["Appointment cancelled", "", intro, "", `Book again: ${siteUrl()}/`]),
     attachments: [
       {
         filename: "cancelled.ics",

@@ -12,8 +12,8 @@ const LINKS = [
 export function AdminNav() {
   const path = usePathname();
   return (
-    <nav className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
-      <ul className="flex gap-7">
+    <nav aria-label="Admin" className="no-scrollbar -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+      <ul className="inline-flex gap-1 rounded-full bg-chip p-1">
         {LINKS.map((l) => {
           const active = l.href === "/admin" ? path === "/admin" : path.startsWith(l.href);
           return (
@@ -21,8 +21,10 @@ export function AdminNav() {
               <Link
                 href={l.href}
                 aria-current={active ? "page" : undefined}
-                className={`eyebrow block whitespace-nowrap border-b py-4 transition-colors ${
-                  active ? "border-ink !text-ink" : "border-transparent hover:!text-ink"
+                className={`flex h-10 items-center whitespace-nowrap rounded-full px-4 text-[14px] font-semibold transition-colors ${
+                  active
+                    ? "bg-white text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                    : "text-muted hover:text-ink"
                 }`}
               >
                 {l.label}

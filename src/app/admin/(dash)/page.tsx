@@ -4,7 +4,7 @@ import { bookings, type Booking } from "@/db/schema";
 import { ActionForm, Submit } from "@/components/ActionForm";
 import { CancelButton } from "@/components/CancelButton";
 import { getSettings } from "@/lib/data";
-import { formatDayLong, formatTime } from "@/lib/format";
+import { formatDayLong, formatDayShort, formatTime } from "@/lib/format";
 import { dateKey, localDateParts } from "@/lib/slots";
 import { adminCancelAction, adminCreateBookingAction } from "../actions";
 
@@ -42,51 +42,50 @@ export default async function Dashboard() {
     const k = keyOf(b.startAt);
     groups.set(k, [...(groups.get(k) ?? []), b]);
   }
-
   const next = upcoming[0];
 
   return (
     <div className="fade-in">
-      <div className="flex flex-col gap-10 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="eyebrow mb-4">Overview</p>
-          <h1 className="display text-[44px] sm:text-[52px]">Appointments</h1>
-        </div>
-        <dl className="grid grid-cols-3 border-y border-line sm:min-w-[440px]">
-          <Stat label="Today" value={groups.get(todayKey)?.length ?? 0} />
-          <Stat
-            label="Next 7 days"
-            value={upcoming.filter((b) => b.startAt.getTime() < weekEnd).length}
-          />
-          <Stat label="Upcoming" value={upcoming.length} />
-        </dl>
-      </div>
+      <h1 className="headline text-[34px] sm:text-[40px]">Appointments</h1>
+
+      <dl className="mt-6 grid grid-cols-3 gap-3">
+        <Stat label="Today" value={groups.get(todayKey)?.length ?? 0} />
+        <Stat label="Next 7 days" value={upcoming.filter((b) => b.startAt.getTime() < weekEnd).length} />
+        <Stat label="Upcoming" value={upcoming.length} />
+      </dl>
 
       {next && (
-        <p className="mt-8 text-muted">
-          Next up: <span className="text-ink">{next.name}</span>,{" "}
-          <span className="tabular">
-            {formatDayLong(next.startAt, s.timezone)} at {formatTime(next.startAt, s.timezone)}
-          </span>
-        </p>
+        <div className="mt-3 flex items-center gap-3 rounded-[16px] bg-white px-4 py-3.5 text-[14px] ring-1 ring-line">
+          <span className="dot shrink-0" aria-hidden />
+          <p className="min-w-0">
+            <span className="text-muted">Next up </span>
+            <span className="font-semibold">{next.name}</span>
+            <span className="tabular text-muted">
+              {" "}
+              · {formatDayShort(next.startAt, s.timezone)}, {formatTime(next.startAt, s.timezone)}
+            </span>
+          </p>
+        </div>
       )}
 
-      <details className="group mt-12 border-y border-line">
-        <summary className="flex cursor-pointer list-none items-center justify-between py-5 [&::-webkit-details-marker]:hidden">
-          <span className="eyebrow !text-ink">Add a booking by hand</span>
-          <span className="text-xl leading-none text-muted transition-transform group-open:rotate-45">+</span>
+      <details className="card group mt-6 overflow-hidden">
+        <summary className="flex min-h-[60px] cursor-pointer list-none items-center justify-between gap-4 px-5 [&::-webkit-details-marker]:hidden">
+          <span className="title text-[16px]">Add a booking by hand</span>
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-chip text-[18px] leading-none transition-transform group-open:rotate-45">
+            +
+          </span>
         </summary>
         <ActionForm
           action={adminCreateBookingAction}
           resetOnSuccess
           successMessage="Booked. If you added an email, a confirmation has gone out."
-          className="pb-8"
+          className="border-t border-line px-5 pb-6 pt-5"
         >
-          <p className="mb-6 max-w-[560px] text-[14px] text-muted">
-            For friends who text you. Any time is allowed, even outside your hours, but it
-            can&rsquo;t overlap another appointment. Email is optional; without one, no emails are sent.
+          <p className="mb-5 max-w-[560px] text-[14px] text-muted">
+            For friends who text you. Any time works, even outside your hours, as long as it doesn&rsquo;t
+            overlap another appointment. Email is optional; without one, no emails are sent.
           </p>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Input label="Name" name="name" required />
             <Input label="Date" name="date" type="date" required />
             <Input label="Time" name="time" type="time" required step={300} />
@@ -94,30 +93,30 @@ export default async function Dashboard() {
             <Input label="Email" name="email" type="email" />
             <Input label="Notes" name="notes" />
           </div>
-          <div className="mt-6">
+          <div className="mt-5">
             <Submit pendingLabel="Booking…">Add booking</Submit>
           </div>
         </ActionForm>
       </details>
 
-      <section className="mt-14">
+      <section className="mt-10">
         {groups.size === 0 ? (
           <div className="card px-6 py-14 text-center">
-            <p className="display text-3xl">A quiet diary.</p>
-            <p className="mt-3 text-muted">No upcoming appointments yet. Share your booking link.</p>
+            <p className="title text-[20px]">Your diary is clear</p>
+            <p className="mt-1.5 text-muted">No upcoming appointments yet. Share your booking link.</p>
           </div>
         ) : (
-          <div className="space-y-14">
+          <div className="space-y-9">
             {[...groups.entries()].map(([key, list]) => (
               <div key={key}>
-                <div className="mb-2 flex items-baseline gap-4">
-                  <h2 className="display text-[28px]">{formatDayLong(list[0].startAt, s.timezone)}</h2>
-                  {key === todayKey && <span className="eyebrow !text-clay">Today</span>}
-                  {key === tomorrowKey && <span className="eyebrow !text-clay">Tomorrow</span>}
+                <div className="mb-3 flex items-center gap-2.5">
+                  <h2 className="title text-[18px]">{formatDayLong(list[0].startAt, s.timezone)}</h2>
+                  {key === todayKey && <span className="pill !bg-ink !text-white">Today</span>}
+                  {key === tomorrowKey && <span className="pill">Tomorrow</span>}
                 </div>
-                <ul className="border-t border-line">
+                <ul className="space-y-2.5">
                   {list.map((b) => (
-                    <AppointmentRow key={b.id} b={b} tz={s.timezone} />
+                    <AppointmentCard key={b.id} b={b} tz={s.timezone} />
                   ))}
                 </ul>
               </div>
@@ -127,20 +126,19 @@ export default async function Dashboard() {
       </section>
 
       {recent.length > 0 && (
-        <section className="mt-20">
-          <p className="eyebrow mb-4">Past two weeks</p>
-          <ul className="border-t border-line text-[14px]">
+        <section className="mt-14">
+          <h2 className="title mb-3 text-[18px]">Past two weeks</h2>
+          <ul className="card divide-y divide-line px-5 text-[14px]">
             {recent.map((b) => (
-              <li
-                key={b.id}
-                className="tabular flex flex-wrap justify-between gap-x-6 gap-y-1 border-b border-line py-3 text-muted"
-              >
-                <span>
-                  <span className="text-ink">{b.name}</span>
-                  {b.status === "cancelled" && <span className="ml-3 eyebrow !text-danger">Cancelled</span>}
+              <li key={b.id} className="tabular flex flex-wrap items-center justify-between gap-x-6 gap-y-1 py-3.5">
+                <span className="flex items-center gap-2">
+                  <span className="font-medium">{b.name}</span>
+                  {b.status === "cancelled" && (
+                    <span className="pill !bg-danger-soft !py-0.5 !text-[12px] !text-danger">Cancelled</span>
+                  )}
                 </span>
-                <span>
-                  {formatDayLong(b.startAt, s.timezone)}, {formatTime(b.startAt, s.timezone)}
+                <span className="text-muted">
+                  {formatDayShort(b.startAt, s.timezone)}, {formatTime(b.startAt, s.timezone)}
                 </span>
               </li>
             ))}
@@ -151,38 +149,39 @@ export default async function Dashboard() {
   );
 }
 
-function AppointmentRow({ b, tz }: { b: Booking; tz: string }) {
+function AppointmentCard({ b, tz }: { b: Booking; tz: string }) {
   return (
-    <li className="grid gap-4 border-b border-line py-6 sm:grid-cols-[110px_1fr_auto] sm:gap-8">
-      <div className="tabular">
-        <p className="display text-[26px] leading-none">{formatTime(b.startAt, tz)}</p>
-        <p className="mt-1.5 text-[12px] text-faint">until {formatTime(b.endAt, tz)}</p>
-      </div>
-      <div className="min-w-0">
-        <p className="text-[16px]">{b.name}</p>
-        <p className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-[14px] text-muted">
-          {b.phone && (
-            <a href={`tel:${b.phone.replace(/\s/g, "")}`} className="link">
-              {b.phone}
-            </a>
-          )}
-          {b.email && (
-            <a href={`mailto:${b.email}`} className="link break-all">
-              {b.email}
-            </a>
-          )}
-        </p>
-        {b.notes && (
-          <p className="mt-3 max-w-[560px] border-l border-line-strong pl-3 text-[14px] text-muted">
-            {b.notes}
+    <li className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5">
+      <div className="flex min-w-0 flex-1 gap-4">
+        <div className="tabular w-[64px] shrink-0 self-start rounded-[12px] bg-chip px-2 py-2.5 text-center">
+          <p className="text-[17px] font-bold leading-none">{formatTime(b.startAt, tz)}</p>
+          <p className="mt-1 text-[11px] text-muted">to {formatTime(b.endAt, tz)}</p>
+        </div>
+        <div className="min-w-0">
+          <p className="title text-[16px]">{b.name}</p>
+          <p className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[14px] text-muted">
+            {b.phone && (
+              <a href={`tel:${b.phone.replace(/\s/g, "")}`} className="link">
+                {b.phone}
+              </a>
+            )}
+            {b.email && (
+              <a href={`mailto:${b.email}`} className="link break-all">
+                {b.email}
+              </a>
+            )}
           </p>
-        )}
+          {b.notes && (
+            <p className="mt-2 rounded-[10px] bg-bone px-3 py-2 text-[14px] text-ink-soft">{b.notes}</p>
+          )}
+        </div>
       </div>
-      <div className="sm:text-right">
+      <div className="-mb-1 -mt-2 flex justify-end sm:m-0 sm:shrink-0">
         <CancelButton
           action={adminCancelAction.bind(null, b.id)}
           label="Cancel"
-          confirmText={b.email ? "Cancel and let them know by email?" : "Cancel this appointment?"}
+          variant="quiet"
+          confirmText={b.email ? "Cancel & email them?" : "Cancel this?"}
         />
       </div>
     </li>
@@ -191,20 +190,19 @@ function AppointmentRow({ b, tz }: { b: Booking; tz: string }) {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="px-1 py-4 sm:px-5 [&:not(:first-child)]:border-l [&:not(:first-child)]:border-line [&:not(:first-child)]:pl-4">
-      <dt className="eyebrow text-[10px]">{label}</dt>
-      <dd className="display tabular mt-1 text-[34px] leading-none">{value}</dd>
+    <div className="card px-4 py-3.5 sm:px-5 sm:py-4">
+      <dt className="text-[13px] font-medium text-muted">{label}</dt>
+      <dd className="tabular mt-1 text-[28px] font-bold leading-none tracking-[-0.02em] sm:text-[32px]">
+        {value}
+      </dd>
     </div>
   );
 }
 
-function Input({
-  label,
-  ...rest
-}: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Input({ label, ...rest }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <label className="field">
-      <span className="eyebrow">{label}</span>
+    <label className="block">
+      <span className="label mb-1.5">{label}</span>
       <input className="input" {...rest} />
     </label>
   );

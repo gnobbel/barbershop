@@ -25,66 +25,65 @@ export default async function ManageBooking({
   const now = new Date();
   const cancelled = b.status === "cancelled";
   const past = !cancelled && b.endAt < now;
+  const active = !cancelled && !past;
   const canChange = clientCanChange(b, s, now);
   const price = formatPrice(s.pricePence, s.currency);
+  const firstName = b.name.split(" ")[0];
 
-  const eyebrow = cancelled
-    ? "Cancelled"
-    : past
-      ? "Past appointment"
-      : isNew
-        ? "Confirmed"
-        : moved
-          ? "Rescheduled"
-          : "Your appointment";
   const heading = cancelled
-    ? "This appointment was cancelled."
+    ? "Appointment cancelled"
     : past
-      ? "Thanks for coming in."
+      ? "Thanks for coming in"
       : isNew
-        ? "You're booked in."
+        ? `You're booked, ${firstName}`
         : moved
-          ? "Your new time is set."
-          : `See you soon, ${b.name.split(" ")[0]}.`;
+          ? "Your new time is set"
+          : `See you soon, ${firstName}`;
 
   return (
-    <div className="fade-in mx-auto max-w-[640px]">
-      <p className="eyebrow mb-5 !text-clay">{eyebrow}</p>
-      <h1 className="display text-[44px] sm:text-[56px]">{heading}</h1>
-      {(isNew || moved) && !cancelled && b.email && (
-        <p className="mt-5 text-muted">
-          A confirmation is on its way to <span className="text-ink">{b.email}</span>. You&rsquo;ll
-          also get a reminder the day before.
-        </p>
-      )}
-
-      <dl className={`mt-12 border-t border-line ${cancelled ? "opacity-50" : ""}`}>
-        <Row label="Date">{formatDayLong(b.startAt, s.timezone)}</Row>
-        <Row label="Time">
-          <span className="tabular">
-            {formatTime(b.startAt, s.timezone)} – {formatTime(b.endAt, s.timezone)}
+    <div className="fade-in mx-auto max-w-[560px]">
+      <div className="flex flex-col items-center text-center">
+        {(isNew || moved) && active ? (
+          <span className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-go text-white">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </span>
-        </Row>
-        <Row label="Service">
-          {s.serviceName}{" "}
-          <span className="text-muted">
-            · {formatDuration(s.durationMin)}
-            {price && ` · ${price}`}
+        ) : (
+          <span className={`pill mb-5 ${cancelled ? "!bg-danger-soft !text-danger" : ""}`}>
+            {cancelled ? "Cancelled" : past ? "Past appointment" : "Upcoming"}
           </span>
-        </Row>
-        {s.address && (
-          <Row label="Where">
-            <span className="whitespace-pre-line">{s.address}</span>
-          </Row>
         )}
-        <Row label="Name">{b.name}</Row>
-      </dl>
+        <h1 className="headline text-[34px] sm:text-[44px]">{heading}</h1>
+        {(isNew || moved) && active && b.email && (
+          <p className="mt-3 max-w-[420px] text-muted">
+            A confirmation is on its way to <span className="font-medium text-ink">{b.email}</span>.
+            You&rsquo;ll get a reminder the day before.
+          </p>
+        )}
+      </div>
 
-      {!cancelled && !past && (
-        <div className="mt-10 space-y-10">
-          <div className="flex flex-wrap gap-3">
-            <a href={`/booking/${token}/ics`} className="btn btn-ghost">
-              Add to calendar
+      <div className={`card mt-8 overflow-hidden ${cancelled ? "opacity-60" : ""}`}>
+        <div className="border-b border-line bg-white px-5 py-5 sm:px-6">
+          <p className="title tabular text-[22px]">{formatDayLong(b.startAt, s.timezone)}</p>
+          <p className="tabular mt-1 flex flex-wrap items-center gap-2 text-muted">
+            {formatTime(b.startAt, s.timezone)} – {formatTime(b.endAt, s.timezone)}
+            <span className="pill tabular !py-0.5">{formatDuration(s.durationMin)}</span>
+          </p>
+        </div>
+        <dl className="divide-y divide-line px-5 sm:px-6">
+          <Row label="Service">{s.serviceName}</Row>
+          {price && <Row label="Price">{price}</Row>}
+          {s.address && <Row label="Where">{s.address}</Row>}
+          <Row label="Name">{b.name}</Row>
+        </dl>
+      </div>
+
+      {active && (
+        <>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <a href={`/booking/${token}/ics`} className="btn btn-secondary">
+              <CalendarIcon /> Apple / Outlook
             </a>
             <a
               href={googleCalendarUrl({
@@ -95,39 +94,39 @@ export default async function ManageBooking({
               })}
               target="_blank"
               rel="noreferrer"
-              className="btn btn-ghost"
+              className="btn btn-secondary"
             >
-              Google Calendar
+              Google
             </a>
           </div>
 
-          <div className="border-t border-line pt-10">
-            <p className="eyebrow mb-4">Need to change something?</p>
+          <div className="card mt-8 p-5 sm:p-6">
+            <p className="title text-[17px]">Need to change something?</p>
             {canChange ? (
-              <div className="flex flex-wrap items-start gap-3">
-                <Link href={`/booking/${token}/reschedule`} className="btn btn-primary">
-                  Reschedule
-                </Link>
-                <CancelButton action={cancelAction.bind(null, token)} />
-              </div>
+              <>
+                <p className="mt-1 text-[14px] text-muted">
+                  You can reschedule or cancel online up to {s.cancelCutoffHours} hours before.
+                </p>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <Link href={`/booking/${token}/reschedule`} className="btn btn-primary">
+                    Reschedule
+                  </Link>
+                  <CancelButton action={cancelAction.bind(null, token)} />
+                </div>
+              </>
             ) : (
-              <p className="max-w-[460px] text-muted">
-                It&rsquo;s within {s.cancelCutoffHours} hours of your appointment, so changes need to
-                go through me directly{s.contact ? <>: <span className="text-ink">{s.contact}</span></> : "."}
-              </p>
-            )}
-            {canChange && (
-              <p className="mt-5 text-[13px] text-faint">
-                You can change or cancel online up to {s.cancelCutoffHours} hours before.
+              <p className="mt-1 text-[14px] text-muted">
+                It&rsquo;s within {s.cancelCutoffHours} hours of your appointment, so please message me
+                directly{s.contact ? <>: <span className="font-medium text-ink">{s.contact}</span></> : "."}
               </p>
             )}
           </div>
-        </div>
+        </>
       )}
 
-      {(cancelled || past) && (
-        <div className="mt-10">
-          <Link href="/book" className="btn btn-primary">
+      {!active && (
+        <div className="mt-8 flex justify-center">
+          <Link href="/#book" className="btn btn-primary btn-lg">
             Book another time
           </Link>
         </div>
@@ -138,9 +137,18 @@ export default async function ManageBooking({
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[96px_1fr] gap-4 border-b border-line py-4 sm:grid-cols-[140px_1fr]">
-      <dt className="eyebrow pt-[3px]">{label}</dt>
-      <dd>{children}</dd>
+    <div className="flex justify-between gap-6 py-3.5 text-[15px]">
+      <dt className="text-muted">{label}</dt>
+      <dd className="whitespace-pre-line text-right font-medium">{children}</dd>
     </div>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3.5" y="5" width="17" height="15" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   );
 }

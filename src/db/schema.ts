@@ -18,7 +18,7 @@ export const settings = pgTable("settings", {
   businessName: text("business_name").notNull().default("The Chair"),
   tagline: text("tagline")
     .notNull()
-    .default("Considered haircuts, by appointment, among friends."),
+    .default("Sharp cuts, no rush."),
   serviceName: text("service_name").notNull().default("Haircut"),
   serviceDescription: text("service_description")
     .notNull()
@@ -26,11 +26,11 @@ export const settings = pgTable("settings", {
   durationMin: integer("duration_min").notNull().default(45),
   bufferMin: integer("buffer_min").notNull().default(15),
   pricePence: integer("price_pence").notNull().default(0),
-  currency: text("currency").notNull().default("GBP"),
+  currency: text("currency").notNull().default("EUR"),
   minNoticeHours: integer("min_notice_hours").notNull().default(12),
   windowDays: integer("window_days").notNull().default(28),
   cancelCutoffHours: integer("cancel_cutoff_hours").notNull().default(12),
-  timezone: text("timezone").notNull().default("Europe/London"),
+  timezone: text("timezone").notNull().default("Europe/Amsterdam"),
   address: text("address").notNull().default(""),
   contact: text("contact").notNull().default(""),
   bookingOpen: boolean("booking_open").notNull().default(true),

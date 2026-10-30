@@ -1,139 +1,160 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bone: #f4f0e8;
-  --color-paper: #fbf9f5;
-  --color-ink: #1f1c19;
-  --color-muted: #6e665d;
-  --color-faint: #a39a8f;
-  --color-line: #e3dcd1;
-  --color-line-strong: #cfc6b8;
-  --color-clay: #8b6a4f;
-  --color-olive: #4a4a3a;
-  --color-danger: #8f3b2e;
+  --color-bone: #f5f2ed; /* page */
+  --color-paper: #fbfaf7; /* cards */
+  --color-white: #ffffff; /* raised / inputs */
+  --color-chip: #ece8e1; /* pills, hover fills */
+  --color-ink: #1f1f1f; /* charcoal */
+  --color-ink-soft: #3a3936;
+  --color-muted: #6b665f;
+  --color-faint: #a19b92;
+  --color-line: #e6e1d9;
+  --color-line-strong: #d6d0c6;
+  --color-go: #3e9b5f;
+  --color-danger: #b4432f;
+  --color-danger-soft: #f6e6e1;
 
-  --font-serif: "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, serif;
-  --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
 
-  --radius-xs: 2px;
+  --radius-control: 12px;
+  --radius-card: 20px;
 }
 
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
-    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     background: var(--color-bone);
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.55;
+    font-feature-settings: "ss01";
     -webkit-font-smoothing: antialiased;
   }
   ::selection {
-    background: color-mix(in srgb, var(--color-clay) 25%, transparent);
+    background: color-mix(in srgb, var(--color-ink) 14%, transparent);
   }
   :focus-visible {
-    outline: 1px solid var(--color-ink);
-    outline-offset: 3px;
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
   }
   input,
   textarea,
-  select {
+  select,
+  button {
     font: inherit;
   }
 }
 
 @layer components {
-  /* Small, letter-spaced label: the quiet voice of the page. */
-  .eyebrow {
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+  /* Bold, tight headline in the spirit of Airbnb Cereal. */
+  .headline {
+    font-weight: 750;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+  }
+  .title {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  /* Quiet, sentence-case label. */
+  .label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
     color: var(--color-muted);
-  }
-  .display {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    letter-spacing: -0.005em;
-    line-height: 1.05;
-    /* Cormorant's old-style "1" reads as "I"; lining figures keep dates legible. */
-    font-variant-numeric: lining-nums;
-  }
-  .rule {
-    border: 0;
-    border-top: 1px solid var(--color-line);
   }
 
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.6rem;
+    gap: 0.5rem;
     min-height: 48px;
-    padding: 0 1.6rem;
-    border: 1px solid var(--color-ink);
-    border-radius: var(--radius-xs);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    transition:
-      background-color 200ms ease,
-      color 200ms ease,
-      border-color 200ms ease;
+    padding: 0 1.4rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
     cursor: pointer;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      transform 160ms ease;
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.98);
   }
   .btn-primary {
     background: var(--color-ink);
-    color: var(--color-paper);
+    color: #fff;
   }
-  .btn-primary:hover {
-    background: var(--color-olive);
-    border-color: var(--color-olive);
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-ink-soft);
   }
-  .btn-ghost {
-    background: transparent;
+  .btn-secondary {
+    background: var(--color-paper);
     color: var(--color-ink);
-    border-color: var(--color-line-strong);
+    border-color: var(--color-line);
   }
-  .btn-ghost:hover {
-    border-color: var(--color-ink);
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--color-line-strong);
+    background: var(--color-white);
+  }
+  .btn-danger {
+    background: var(--color-danger);
+    color: #fff;
+  }
+  .btn-lg {
+    min-height: 54px;
+    padding: 0 1.75rem;
+    font-size: 16px;
+  }
+  .btn-sm {
+    min-height: 40px;
+    padding: 0 1rem;
+    font-size: 14px;
   }
   .btn:disabled {
-    opacity: 0.45;
     cursor: not-allowed;
+    background: var(--color-chip);
+    color: var(--color-faint);
+    border-color: transparent;
   }
 
   .link {
     text-decoration: underline;
     text-decoration-color: var(--color-line-strong);
-    text-underline-offset: 4px;
-    transition: text-decoration-color 200ms ease;
+    text-underline-offset: 3px;
+    transition: text-decoration-color 160ms ease;
   }
   .link:hover {
     text-decoration-color: currentColor;
   }
 
-  .field {
-    display: block;
-  }
-  .field > span {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
   .input {
     display: block;
     width: 100%;
-    min-height: 48px;
-    padding: 0.7rem 0.9rem;
-    background: var(--color-paper);
+    min-height: 50px;
+    padding: 0.75rem 0.95rem;
+    background: var(--color-white);
     border: 1px solid var(--color-line);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-control);
     color: var(--color-ink);
-    transition: border-color 200ms ease;
+    /* 16px stops iOS from zooming into the field. */
+    font-size: 16px;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease;
   }
   .input::placeholder {
     color: var(--color-faint);
@@ -144,6 +165,10 @@
   .input:focus {
     outline: none;
     border-color: var(--color-ink);
+    box-shadow: 0 0 0 1px var(--color-ink);
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--color-danger);
   }
   textarea.input {
     min-height: 96px;
@@ -153,15 +178,65 @@
   .card {
     background: var(--color-paper);
     border: 1px solid var(--color-line);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-card);
+  }
+
+  /* Choice tile: dates, times, weekday toggles. */
+  .tile {
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-control);
+    background: var(--color-paper);
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease;
+  }
+  .tile:hover {
+    border-color: var(--color-line-strong);
+    background: var(--color-white);
+  }
+  .tile[aria-pressed="true"],
+  .tile-on {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: #fff;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 999px;
+    background: var(--color-chip);
+    padding: 0.25rem 0.7rem;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-ink-soft);
+  }
+
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--color-go);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-go) 18%, transparent);
   }
 
   .tabular {
-    font-variant-numeric: lining-nums tabular-nums;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   .fade-in {
-    animation: fade-in 500ms ease both;
+    /* "backwards", not "both": a held transform would trap position:fixed children. */
+    animation: fade-in 450ms ease backwards;
   }
 }
 
@@ -182,5 +257,6 @@
   *::after {
     animation: none !important;
     transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

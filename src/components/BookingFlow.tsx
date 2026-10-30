@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 
 export type FlowDay = {
   date: string;
@@ -24,153 +23,145 @@ type Props = {
   mode: "new" | "reschedule";
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   submitLabel: string;
+  /** Shorter label for the button on phones. */
+  shortSubmitLabel?: string;
+  /** e.g. { title: "Haircut", meta: "45 min · €25" } */
+  summary: { title: string; meta: string };
+  /** Reschedule: the appointment being moved, shown and preselected. */
+  current?: { iso: string; date: string; label: string };
 };
 
-function scrollIntoViewSoftly(el: HTMLElement | null) {
-  if (!el) return;
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function scrollToSoftly(el: HTMLElement | null) {
+  el?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
 }
 
-export function BookingFlow({ days, mode, action, submitLabel }: Props) {
-  const [state, formAction] = useActionState(action, { error: null });
-  const [date, setDate] = useState<string | null>(days[0]?.date ?? null);
+export function BookingFlow({
+  days,
+  mode,
+  action,
+  submitLabel,
+  shortSubmitLabel,
+  summary,
+  current,
+}: Props) {
+  const [state, formAction, pending] = useActionState(action, { error: null });
+  const [date, setDate] = useState<string | null>(
+    (current && days.some((d) => d.date === current.date) ? current.date : days[0]?.date) ?? null,
+  );
   const [slot, setSlot] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const timesRef = useRef<HTMLDivElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
 
   const day = days.find((d) => d.date === date);
   const chosen = day?.slots.find((s) => s.iso === slot);
 
+  // On phones, move on to the details once a time is picked.
   useEffect(() => {
-    if (slot) scrollIntoViewSoftly(detailsRef.current);
-  }, [slot]);
+    if (slot && mode === "new" && window.matchMedia("(max-width: 1023px)").matches) {
+      scrollToSoftly(detailsRef.current);
+    }
+  }, [slot, mode]);
 
   if (!days.length) {
     return (
-      <div className="card px-6 py-12 text-center sm:px-12">
-        <p className="display text-3xl">No openings right now</p>
-        <p className="mt-4 text-muted">
+      <div className="card px-6 py-14 text-center">
+        <p className="title text-[22px]">No openings right now</p>
+        <p className="mx-auto mt-2 max-w-[320px] text-muted">
           Every slot in the coming weeks is taken. Please check back soon.
         </p>
       </div>
     );
   }
 
+  function submit() {
+    const form = formRef.current;
+    if (!form || !slot || pending) return;
+    // Native validation scrolls to and highlights the first missing field.
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    startTransition(() => formAction(data));
+  }
+
   return (
-    <div className="space-y-14">
-      {/* 01 — Day */}
-      <section aria-labelledby="step-day">
-        <StepHeading n="01" id="step-day">
-          Choose a day
-        </StepHeading>
-        <div className="-mx-5 overflow-x-auto px-5 pb-3 [mask-image:linear-gradient(to_right,#000_calc(100%-56px),transparent)] [scrollbar-width:thin] sm:mx-0 sm:px-0">
-          <ul className="flex snap-x gap-2 pr-14">
-            {days.map((d) => {
-              const active = d.date === date;
-              return (
-                <li key={d.date} className="snap-start">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDate(d.date);
-                      setSlot(null);
-                      scrollIntoViewSoftly(timesRef.current);
-                    }}
-                    aria-pressed={active}
-                    aria-label={`${d.label}, ${d.slots.length} times available`}
-                    className={`flex h-[92px] w-[68px] flex-col items-center justify-center rounded-xs border transition-colors duration-200 ${
-                      active
-                        ? "border-ink bg-ink text-paper"
-                        : "border-line bg-paper hover:border-line-strong"
-                    }`}
-                  >
-                    <span
-                      className={`text-[10px] font-medium uppercase tracking-[0.16em] ${active ? "text-paper/70" : "text-muted"}`}
-                    >
-                      {d.weekdayShort}
-                    </span>
-                    <span className="display tabular mt-1 text-[28px] leading-none">{d.day}</span>
-                    <span
-                      className={`mt-1.5 text-[10px] uppercase tracking-[0.12em] ${active ? "text-paper/70" : "text-faint"}`}
-                    >
-                      {d.monthShort}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+    <div>
+      <section aria-labelledby="step-when">
+        {mode === "new" ? (
+          <StepTitle n={1} id="step-when">
+            Pick a date &amp; time
+          </StepTitle>
+        ) : (
+          <h2 id="step-when" className="sr-only">
+            Pick a new date and time
+          </h2>
+        )}
+        <DateRow
+          days={days}
+          selected={date}
+          onSelect={(d) => {
+            setDate(d);
+            setSlot(null);
+          }}
+        />
+
+        <div ref={timesRef} className="mt-6 scroll-mt-6">
+          {day && (
+            <>
+              <p className="mb-3 text-[14px] text-muted">
+                <span className="font-semibold text-ink">{day.label}</span> · {day.slots.length}{" "}
+                {day.slots.length === 1 ? "time" : "times"} available
+              </p>
+              <ul className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+                {day.slots.map((s) => {
+                  const isCurrent = s.iso === current?.iso;
+                  return (
+                    <li key={s.iso}>
+                      <button
+                        type="button"
+                        onClick={() => setSlot(s.iso)}
+                        aria-pressed={s.iso === slot}
+                        disabled={isCurrent}
+                        aria-label={isCurrent ? `${s.label}, your current time` : undefined}
+                        className="tile tabular flex h-12 w-full flex-col items-center justify-center text-[15px] font-semibold disabled:cursor-default disabled:border-dashed disabled:bg-transparent disabled:text-faint"
+                      >
+                        {s.label}
+                        {isCurrent && <span className="text-[10px] font-semibold leading-none">Current</span>}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
         </div>
       </section>
 
-      {/* 02 — Time */}
-      <section aria-labelledby="step-time" ref={timesRef} className="scroll-mt-8">
-        <StepHeading n="02" id="step-time">
-          Choose a time
-        </StepHeading>
-        {day && (
-          <>
-            <p className="display mb-5 text-2xl">{day.label}</p>
-            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {day.slots.map((s) => {
-                const active = s.iso === slot;
-                return (
-                  <li key={s.iso}>
-                    <button
-                      type="button"
-                      onClick={() => setSlot(s.iso)}
-                      aria-pressed={active}
-                      className={`tabular h-12 w-full rounded-xs border text-[15px] transition-colors duration-200 ${
-                        active
-                          ? "border-ink bg-ink text-paper"
-                          : "border-line bg-paper hover:border-line-strong"
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-      </section>
-
-      {/* 03 — Details / confirm */}
-      <section
-        aria-labelledby="step-details"
-        ref={detailsRef}
-        className={`scroll-mt-8 transition-opacity duration-300 ${slot ? "" : "pointer-events-none opacity-40"}`}
-        aria-disabled={!slot}
+      <form
+        ref={formRef}
+        id="booking-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        noValidate={false}
       >
-        <StepHeading n="03" id="step-details">
-          {mode === "new" ? "Your details" : "Confirm the change"}
-        </StepHeading>
+        <input type="hidden" name="start" value={slot ?? ""} />
 
-        <form action={formAction} className="space-y-6">
-          <input type="hidden" name="start" value={slot ?? ""} />
-
-          <div className="border-y border-line py-5">
-            <p className="eyebrow mb-1.5">Selected</p>
-            <p className="tabular text-[17px]">
-              {chosen && day ? (
-                <>
-                  {day.label} <span className="text-muted">at</span> {chosen.label}
-                </>
-              ) : (
-                <span className="text-faint">Pick a day and time above</span>
-              )}
-            </p>
-          </div>
-
-          {mode === "new" && (
-            <div className="grid gap-5 sm:grid-cols-2">
+        {mode === "new" && (
+          <section aria-labelledby="step-details" ref={detailsRef} className="mt-12 scroll-mt-6">
+            <StepTitle n={2} id="step-details">
+              Your details
+            </StepTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Name" name="name" autoComplete="name" required state={state} />
               <Field
                 label="Phone"
                 name="phone"
                 type="tel"
+                inputMode="tel"
                 autoComplete="tel"
                 required
                 state={state}
@@ -180,22 +171,23 @@ export function BookingFlow({ days, mode, action, submitLabel }: Props) {
                   label="Email"
                   name="email"
                   type="email"
+                  inputMode="email"
                   autoComplete="email"
                   required
-                  hint="Your confirmation and reminder go here."
+                  hint="Your confirmation and reminder are sent here."
                   state={state}
                 />
               </div>
-              <label className="field sm:col-span-2">
-                <span className="eyebrow">
-                  Notes <span className="normal-case tracking-normal text-faint">(optional)</span>
+              <label className="sm:col-span-2">
+                <span className="label mb-1.5">
+                  Notes <span className="font-normal text-faint">· optional</span>
                 </span>
                 <textarea
                   name="notes"
                   defaultValue={state.values?.notes}
                   maxLength={500}
                   className="input"
-                  placeholder="Anything I should know: the style you're after, a reference, etc."
+                  placeholder="The style you're after, a reference photo link…"
                 />
               </label>
               {/* Honeypot: invisible to people, irresistible to bots. */}
@@ -206,29 +198,173 @@ export function BookingFlow({ days, mode, action, submitLabel }: Props) {
                 </label>
               </div>
             </div>
-          )}
+          </section>
+        )}
 
-          {state.error && (
-            <p role="alert" className="border-l-2 border-danger pl-4 text-[14px] text-danger">
-              {state.error}
-            </p>
-          )}
+        {/* Keeps the last field clear of the sticky bar on phones. */}
+        <div className="h-16 lg:hidden" aria-hidden />
 
-          <Submit disabled={!slot} label={submitLabel} />
-        </form>
-      </section>
+        <SummaryBar
+          summary={summary}
+          when={chosen && day ? `${day.weekdayShort} ${day.day} ${day.monthShort} · ${chosen.label}` : null}
+          idle={current ? `Currently ${current.label}` : "Pick a date and time"}
+          error={state.error}
+          pending={pending}
+          submitLabel={submitLabel}
+          shortSubmitLabel={shortSubmitLabel ?? submitLabel}
+        />
+      </form>
     </div>
   );
 }
 
-function StepHeading({ n, id, children }: { n: string; id: string; children: React.ReactNode }) {
+function StepTitle({ n, id, children }: { n: number; id: string; children: React.ReactNode }) {
   return (
-    <div className="mb-6 flex items-baseline gap-4">
-      <span className="tabular text-[11px] font-medium tracking-[0.18em] text-clay">{n}</span>
-      <h2 id={id} className="eyebrow !text-ink">
-        {children}
-      </h2>
-      <span className="h-px flex-1 translate-y-[-3px] bg-line" />
+    <h2 id={id} className="title mb-4 text-[20px] sm:text-[22px]">
+      <span className="text-faint">{n}.</span> {children}
+    </h2>
+  );
+}
+
+function DateRow({
+  days,
+  selected,
+  onSelect,
+}: {
+  days: FlowDay[];
+  selected: string | null;
+  onSelect: (date: string) => void;
+}) {
+  const scroller = useRef<HTMLUListElement>(null);
+  const [edges, setEdges] = useState({ start: true, end: false });
+
+  const updateEdges = () => {
+    const el = scroller.current;
+    if (!el) return;
+    setEdges({
+      start: el.scrollLeft < 4,
+      end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4,
+    });
+  };
+  useEffect(updateEdges, []);
+
+  const page = (dir: 1 | -1) => {
+    const el = scroller.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  };
+
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <ArrowButton dir={-1} disabled={edges.start} onClick={() => page(-1)} />
+      <ul
+        ref={scroller}
+        onScroll={updateEdges}
+        style={{
+          maskImage: `linear-gradient(to right, ${edges.start ? "#000" : "transparent"}, #000 32px, #000 calc(100% - 32px), ${edges.end ? "#000" : "transparent"})`,
+        }}
+        className="no-scrollbar -mx-5 flex min-w-0 flex-1 snap-x snap-mandatory scroll-px-5 gap-2 overflow-x-auto px-5 lg:mx-0 lg:scroll-px-0 lg:px-0"
+      >
+        {days.map((d) => (
+          <li key={d.date} className="snap-start">
+            <button
+              type="button"
+              onClick={() => onSelect(d.date)}
+              aria-pressed={d.date === selected}
+              aria-label={`${d.label}, ${d.slots.length} times available`}
+              className="tile flex h-[68px] w-[72px] flex-col items-center justify-center gap-0.5"
+            >
+              <span className="text-[13px] font-medium opacity-70">{d.weekdayShort}</span>
+              <span className="tabular whitespace-nowrap text-[15px] font-semibold">
+                {d.day} {d.monthShort}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <ArrowButton dir={1} disabled={edges.end} onClick={() => page(1)} />
+    </div>
+  );
+}
+
+function ArrowButton({ dir, disabled, onClick }: { dir: 1 | -1; disabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={dir === 1 ? "Later dates" : "Earlier dates"}
+      className="hidden h-10 w-10 shrink-0 place-items-center rounded-full text-ink transition-colors hover:bg-chip disabled:cursor-default disabled:opacity-25 disabled:hover:bg-transparent lg:grid"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d={dir === 1 ? "M9 5l7 7-7 7" : "M15 5l-7 7 7 7"}
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
+function SummaryBar({
+  summary,
+  when,
+  idle,
+  error,
+  pending,
+  submitLabel,
+  shortSubmitLabel,
+}: {
+  summary: { title: string; meta: string };
+  when: string | null;
+  idle: string;
+  error: string | null;
+  pending: boolean;
+  submitLabel: string;
+  shortSubmitLabel: string;
+}) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 px-5 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-[0_-1px_2px_rgba(0,0,0,0.03)] backdrop-blur-md lg:static lg:mt-10 lg:rounded-[20px] lg:border lg:bg-paper lg:px-6 lg:py-5 lg:shadow-none lg:backdrop-blur-none">
+      {error && (
+        <p role="alert" className="mb-2.5 rounded-[10px] bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
+          {error}
+        </p>
+      )}
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 text-[14px] leading-snug">
+          {when ? (
+            <>
+              <p className="tabular truncate font-semibold">{when}</p>
+              <p className="truncate text-muted">
+                {summary.title} · {summary.meta}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold">{summary.title}</p>
+              <p className="tabular truncate text-muted">{idle}</p>
+            </>
+          )}
+        </div>
+        <button type="submit" aria-label={submitLabel} disabled={!when || pending} className="btn btn-primary shrink-0 lg:min-h-[54px] lg:px-7 lg:text-[16px]">
+          {pending ? (
+            "One moment…"
+          ) : (
+            <>
+              <span className="sm:hidden">{shortSubmitLabel}</span>
+              <span className="hidden sm:inline">{submitLabel}</span>
+            </>
+          )}
+          {!pending && (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
@@ -247,30 +383,20 @@ function Field({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   const error = state.fieldErrors?.[name];
   return (
-    <label className="field">
-      <span className="eyebrow">{label}</span>
+    <label className="block">
+      <span className="label mb-1.5">{label}</span>
       <input
         name={name}
         defaultValue={state.values?.[name]}
         className="input"
         aria-invalid={!!error}
-        style={error ? { borderColor: "var(--color-danger)" } : undefined}
         {...rest}
       />
       {(error || hint) && (
-        <span className={`mt-2 block text-[13px] ${error ? "text-danger" : "text-faint"}`}>
+        <span className={`mt-1.5 block text-[13px] ${error ? "text-danger" : "text-faint"}`}>
           {error ?? hint}
         </span>
       )}
     </label>
-  );
-}
-
-function Submit({ disabled, label }: { disabled: boolean; label: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={disabled || pending}>
-      {pending ? "One moment…" : label}
-    </button>
   );
 }

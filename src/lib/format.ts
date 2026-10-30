@@ -78,3 +78,30 @@ export const WEEKDAYS = [
 
 /** Monday-first order, as people read a week. */
 export const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+/** "Thu 15 Oct" */
+export function formatDayShort(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat(LOCALE, {
+    timeZone,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("weekday")} ${get("day")} ${get("month")}`;
+}
+
+/** "Today", "Tomorrow" or "Thu 15 Oct", judged in the barber's timezone. */
+export function relativeDay(date: Date, timeZone: string, now = new Date()) {
+  const key = (d: Date) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone, dateStyle: "short" }).format(d);
+  if (key(date) === key(now)) return "Today";
+  if (key(date) === key(new Date(now.getTime() + 24 * 60 * 60_000))) return "Tomorrow";
+  return formatDayShort(date, timeZone);
+}
+
+/** "Atelier Noor" → "AN" */
+export function initials(name: string) {
+  const words = name.replace(/^the\s+/i, "").split(/\s+/).filter(Boolean);
+  return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? "?").slice(0, 2)).toUpperCase();
+}

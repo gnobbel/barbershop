@@ -44,14 +44,15 @@ export function ActionForm({
       >
         {children}
         {state.error ? (
-          <p role="alert" className="mt-4 border-l-2 border-danger pl-3 text-[14px] text-danger">
+          <p role="alert" className="mt-4 rounded-[10px] bg-danger-soft px-3 py-2 text-[14px] font-medium text-danger">
             {state.error}
           </p>
         ) : (
           successMessage &&
           submitted.current &&
           !pending && (
-            <p role="status" className="mt-4 text-[14px] text-olive">
+            <p role="status" className="mt-4 flex items-center gap-2 text-[14px] font-medium text-go">
+              <span className="dot" aria-hidden />
               {successMessage}
             </p>
           )

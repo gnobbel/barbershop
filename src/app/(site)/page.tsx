@@ -1,91 +1,143 @@
-import Link from "next/link";
+import { BookingFlow } from "@/components/BookingFlow";
 import { getSettings, loadSlotInput } from "@/lib/data";
-import {
-  formatDayLong,
-  formatDuration,
-  formatPrice,
-  formatTime,
-  WEEKDAY_ORDER,
-  WEEKDAYS,
-} from "@/lib/format";
+import { toFlowDays } from "@/lib/flow";
+import { formatDuration, formatPrice, WEEKDAY_ORDER, WEEKDAYS } from "@/lib/format";
 import { generateSlots, minutesToTime } from "@/lib/slots";
+import { bookAction } from "./book/actions";
 
 export default async function Home() {
   const s = await getSettings();
   const input = await loadSlotInput(s, new Date());
-  const next = generateSlots(input)[0]?.slots[0];
+  const days = s.bookingOpen ? toFlowDays(generateSlots(input), s.timezone) : [];
   const price = formatPrice(s.pricePence, s.currency);
+  const meta = [formatDuration(s.durationMin), price].filter(Boolean).join(" · ");
 
   const hours = WEEKDAY_ORDER.map((wd) => ({
-    day: WEEKDAYS[wd],
+    day: WEEKDAYS[wd].slice(0, 3),
     ranges: input.weeklyHours
       .filter((h) => h.weekday === wd)
       .map((h) => `${minutesToTime(h.startMin)}–${minutesToTime(h.endMin)}`),
-  })).filter((d) => d.ranges.length);
+  }));
 
   return (
-    <div className="fade-in">
-      <section className="max-w-[640px]">
-        <p className="eyebrow mb-6">By appointment</p>
-        <h1 className="display text-[44px] sm:text-[68px]">{s.tagline}</h1>
-        <p className="mt-8 max-w-[460px] text-[16px] leading-relaxed text-muted">
-          {s.serviceDescription}
-        </p>
-        <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
-          {s.bookingOpen ? (
-            <Link href="/book" className="btn btn-primary">
-              Book an appointment
-            </Link>
-          ) : (
-            <p className="text-muted">Bookings are paused for now. Check back soon.</p>
-          )}
-          {s.bookingOpen && next && (
-            <p className="text-[13px] text-muted">
-              Next opening{" "}
-              <span className="tabular text-ink">
-                {formatDayLong(next, s.timezone)}, {formatTime(next, s.timezone)}
-              </span>
-            </p>
-          )}
-        </div>
-      </section>
+    <div className="fade-in grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14 xl:gap-20">
+      {/* Intro */}
+      <aside className="lg:sticky lg:top-8 lg:self-start">
+        <h1 className="headline text-balance text-[38px] sm:text-[52px] lg:text-[60px]">{s.tagline}</h1>
+        {s.serviceDescription && (
+          <p className="mt-4 max-w-[440px] text-[16px] text-muted sm:text-[17px]">{s.serviceDescription}</p>
+        )}
 
-      <dl className="mt-20 grid border-t border-line sm:mt-28 sm:grid-cols-3">
-        <Detail label="The cut">
-          <p>{s.serviceName}</p>
-          <p className="text-muted">
-            {formatDuration(s.durationMin)}
-            {price && ` · ${price}`}
-          </p>
-        </Detail>
-        <Detail label="Hours">
-          {hours.length ? (
-            <ul className="tabular space-y-0.5">
-              {hours.map((h) => (
-                <li key={h.day} className="flex justify-between gap-4">
-                  <span>{h.day.slice(0, 3)}</span>
-                  <span className="text-muted">{h.ranges.join(", ")}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted">To be announced</p>
+        <div className="card mt-6 flex items-center justify-between gap-4 p-5">
+          <p className="title min-w-0 text-[17px]">{s.serviceName}</p>
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="pill tabular">{formatDuration(s.durationMin)}</span>
+            {price && <span className="title tabular text-[20px]">{price}</span>}
+          </div>
+        </div>
+
+        <dl className="mt-6 grid gap-5 text-[14px] sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          {(s.address || s.contact) && (
+            <div className="flex gap-3">
+              <PinIcon />
+              <div>
+                <dt className="sr-only">Where</dt>
+                {s.address && (
+                  <dd className="whitespace-pre-line font-medium">
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(s.address)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="link"
+                    >
+                      {s.address}
+                    </a>
+                  </dd>
+                )}
+                {s.contact && <dd className="text-muted">{s.contact}</dd>}
+              </div>
+            </div>
           )}
-        </Detail>
-        <Detail label="Where">
-          <p className="whitespace-pre-line">{s.address || "Shared on booking"}</p>
-          {s.contact && <p className="text-muted">{s.contact}</p>}
-        </Detail>
-      </dl>
+          {hours.some((h) => h.ranges.length) && (
+            <div className="flex gap-3">
+              <ClockIcon />
+              <div className="min-w-0 flex-1">
+                <dt className="sr-only">Opening hours</dt>
+                {/* Collapsed on phones so the booking steps come first; always open on desktop. */}
+                <dd className="lg:hidden">
+                  <details className="group">
+                    <summary className="flex min-h-[24px] cursor-pointer list-none items-center gap-1.5 font-medium [&::-webkit-details-marker]:hidden">
+                      Opening hours
+                      <svg className="text-muted transition-transform group-open:rotate-180" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </summary>
+                    <HoursList hours={hours} />
+                  </details>
+                </dd>
+                <dd className="hidden lg:block">
+                  <p className="font-medium">Opening hours</p>
+                  <HoursList hours={hours} />
+                </dd>
+              </div>
+            </div>
+          )}
+        </dl>
+      </aside>
+
+      {/* Booking */}
+      <section
+        id="book"
+        aria-label="Book an appointment"
+        className="scroll-mt-6 lg:rounded-[24px] lg:border lg:border-line lg:bg-[#f9f7f3] lg:p-8 xl:p-10"
+      >
+        {s.bookingOpen ? (
+          <BookingFlow
+            days={days}
+            mode="new"
+            action={bookAction}
+            submitLabel="Confirm booking"
+            shortSubmitLabel="Confirm"
+            summary={{ title: s.serviceName, meta }}
+          />
+        ) : (
+          <div className="card px-6 py-14 text-center">
+            <p className="title text-[22px]">Bookings are paused</p>
+            <p className="mt-2 text-muted">Please check back soon.</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
 
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+function HoursList({ hours }: { hours: { day: string; ranges: string[] }[] }) {
   return (
-    <div className="border-b border-line py-7 sm:border-b-0 sm:py-9 sm:pr-10 sm:[&:not(:first-child)]:border-l sm:[&:not(:first-child)]:pl-10">
-      <dt className="eyebrow mb-4">{label}</dt>
-      <dd className="space-y-1 text-[15px]">{children}</dd>
-    </div>
+    <ul className="tabular mt-1.5 max-w-[240px] space-y-0.5 text-muted">
+      {hours.map((h) => (
+        <li key={h.day} className="flex justify-between gap-4">
+          <span>{h.day}</span>
+          <span className={h.ranges.length ? "" : "text-faint"}>{h.ranges.join(", ") || "Closed"}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg className="mt-0.5 shrink-0 text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="9.5" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg className="mt-0.5 shrink-0 text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 7.5V12l3 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   );
 }
