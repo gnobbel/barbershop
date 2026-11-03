@@ -75,7 +75,7 @@ All of these have free tiers that comfortably cover this. The one thing you pay 
 
    The workflow in `.github/workflows/reminders.yml` then calls the site every 15 minutes, and you can trigger it by hand from the *Actions* tab. GitHub only runs schedules on the default branch, so merge to `main`.
 
-   GitHub pauses scheduled workflows after 60 days without a push (it emails you first). If that happens, click *Enable workflow* in the Actions tab. Meanwhile the daily Vercel cron in `vercel.json` (17:00 UTC) keeps sending any reminder due in the next 24 hours, so nobody is forgotten. For exact timing without GitHub, point a free pinger like [cron-job.org](https://cron-job.org) at `https://yourdomain.nl/api/cron/reminders` every 15 minutes with the header `Authorization: Bearer <CRON_SECRET>`.
+   GitHub pauses scheduled workflows after 60 days without a push (it emails you first). If that happens, click *Enable workflow* in the Actions tab. Meanwhile the daily Vercel cron in `vercel.json` (07:00 UTC, 08:00 or 09:00 in the Netherlands) keeps sending any reminder due in the next 24 hours, so nobody is forgotten. The reminder then arrives the morning before or the morning of the appointment, and says "vandaag" or "morgen" accordingly. For exact timing without GitHub, point a free pinger like [cron-job.org](https://cron-job.org) at `https://yourdomain.nl/api/cron/reminders` every 15 minutes with the header `Authorization: Bearer <CRON_SECRET>`.
 6. **Set up.** Open `/admin` and sign in.
    - Fill in **Settings**: your name, address, price, contact and WhatsApp number.
    - Add your **Availability**.

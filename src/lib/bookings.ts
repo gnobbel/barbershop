@@ -242,7 +242,7 @@ export async function sendDueReminders(now = new Date()) {
   let sent = 0;
   let failed = 0;
   for (const b of due) {
-    if (await sendEmail(reminderEmail(b, s))) {
+    if (await sendEmail(reminderEmail(b, s, now))) {
       sent++;
     } else {
       failed++;

@@ -1,6 +1,13 @@
 import type { Booking, Settings } from "@/db/schema";
 import { siteUrl } from "@/lib/env";
-import { formatDateTime, formatDuration, formatPrice, formatTime } from "@/lib/format";
+import {
+  capitalize,
+  formatDateTime,
+  formatDuration,
+  formatPrice,
+  formatTime,
+  relativeDay,
+} from "@/lib/format";
 import { buildIcs, googleCalendarUrl, sequenceFor } from "@/lib/ics";
 import { whatsappNumber, whatsappUrl } from "@/lib/whatsapp";
 import type { EmailMessage } from "./send";
@@ -180,18 +187,21 @@ export function confirmationEmail(b: Booking, s: Settings, rescheduled = false):
   };
 }
 
-export function reminderEmail(b: Booking, s: Settings): EmailMessage {
+export function reminderEmail(b: Booking, s: Settings, now = new Date()): EmailMessage {
   const time = formatTime(b.startAt, s.timezone);
   const when = formatDateTime(b.startAt, s.timezone);
   const firstName = b.name.split(" ")[0];
-  const intro = `Even een herinnering, ${firstName}: tot morgen om ${time}.`;
+  // Usually "morgen", but a late reminder run can land on the day itself.
+  const day = relativeDay(b.startAt, s.timezone, now);
+  const heading = `Tot ${day}`;
+  const intro = `Even een herinnering, ${firstName}: tot ${day} om ${time}.`;
   return {
     to: b.email!,
-    subject: `Morgen om ${time}: ${s.serviceName}`,
+    subject: `${capitalize(day)} om ${time}: ${s.serviceName}`,
     html: layout({
       settings: s,
       eyebrow: "Herinnering",
-      heading: "Tot morgen",
+      heading,
       intro,
       rows: appointmentRows(b, s),
       actions: [{ label: "Afspraak bekijken", href: manageUrl(b), primary: true }, ...whatsappAction(s, b)],
@@ -200,7 +210,7 @@ export function reminderEmail(b: Booking, s: Settings): EmailMessage {
         : "Later of lukt het niet? Laat het me even weten.",
     }),
     text: text([
-      "Tot morgen",
+      heading,
       "",
       intro,
       "",

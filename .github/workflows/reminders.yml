@@ -6,8 +6,9 @@ name: Appointment reminders
 #   CRON_SECRET  the same value as the CRON_SECRET env var on Vercel
 #
 # GitHub pauses scheduled workflows after 60 days without a push, and runs
-# can start late. vercel.json also calls the same endpoint once a day as a
-# backup, so reminders keep going out (a little less precisely) if this stops.
+# can start late. vercel.json also calls the same endpoint every morning
+# (07:00 UTC) as a backup, so if this stops, reminders still go out: the
+# morning before, or the morning of the day itself.
 # Re-enable it from the Actions tab if GitHub has paused it.
 on:
   schedule:
