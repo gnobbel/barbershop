@@ -148,6 +148,45 @@ export async function rescheduleBooking(token: string, startAt: Date): Promise<B
   return { ok: true, booking };
 }
 
+/**
+ * The barber moves an appointment to any free time, inside opening hours or
+ * not. Only overlaps with other appointments are refused.
+ */
+export async function moveBookingByBarber(
+  id: string,
+  startAt: Date,
+  opts: { notify: boolean },
+): Promise<BookingResult> {
+  const s = await getSettings();
+  const [current] = await db.select().from(bookings).where(eq(bookings.id, id));
+  if (!current || current.status !== "confirmed") {
+    return { ok: false, error: "This appointment is no longer active." };
+  }
+  const length = current.endAt.getTime() - current.startAt.getTime();
+
+  let booking: Booking | undefined;
+  try {
+    [booking] = await db
+      .update(bookings)
+      .set({
+        startAt,
+        endAt: new Date(startAt.getTime() + length),
+        // Without a fresh confirmation, keep the old one as the reference for reminders.
+        ...(opts.notify && current.email ? { confirmedAt: new Date() } : {}),
+        reminderSentAt: null,
+      })
+      .where(and(eq(bookings.id, id), eq(bookings.status, "confirmed")))
+      .returning();
+  } catch (err) {
+    if (isOverlapError(err)) return { ok: false, error: "That time overlaps another appointment." };
+    throw err;
+  }
+  if (!booking) return { ok: false, error: "This appointment is no longer active." };
+
+  if (opts.notify && booking.email) await sendEmail(confirmationEmail(booking, s, true));
+  return { ok: true, booking };
+}
+
 export async function cancelBooking(
   where: { token: string } | { id: string },
   opts: { byBarber: boolean; notify?: boolean },

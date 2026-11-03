@@ -6,6 +6,7 @@ import { clientCanChange, getBookingByToken } from "@/lib/bookings";
 import { getSettings } from "@/lib/data";
 import { formatDayLong, formatDuration, formatPrice, formatTime } from "@/lib/format";
 import { googleCalendarUrl } from "@/lib/ics";
+import { whatsappNumber, whatsappUrl } from "@/lib/whatsapp";
 import { cancelAction } from "./actions";
 
 export const metadata: Metadata = { title: "Your appointment", robots: { index: false } };
@@ -29,6 +30,10 @@ export default async function ManageBooking({
   const canChange = clientCanChange(b, s, now);
   const price = formatPrice(s.pricePence, s.currency);
   const firstName = b.name.split(" ")[0];
+  const wa = s.whatsapp ? whatsappNumber(s.whatsapp, s.timezone) : null;
+  const waLink =
+    wa &&
+    whatsappUrl(wa, `Hi! It's ${firstName}, about my appointment on ${formatDayLong(b.startAt, s.timezone)} at ${formatTime(b.startAt, s.timezone)}: `);
 
   const heading = cancelled
     ? "Appointment cancelled"
@@ -113,12 +118,24 @@ export default async function ManageBooking({
                   </Link>
                   <CancelButton action={cancelAction.bind(null, token)} />
                 </div>
+                {waLink && (
+                  <a href={waLink} target="_blank" rel="noreferrer" className="link mt-4 inline-block text-[14px] font-medium">
+                    Or message me on WhatsApp
+                  </a>
+                )}
               </>
             ) : (
-              <p className="mt-1 text-[14px] text-muted">
-                It&rsquo;s within {s.cancelCutoffHours} hours of your appointment, so please message me
-                directly{s.contact ? <>: <span className="font-medium text-ink">{s.contact}</span></> : "."}
-              </p>
+              <>
+                <p className="mt-1 text-[14px] text-muted">
+                  It&rsquo;s within {s.cancelCutoffHours} hours of your appointment, so please message me
+                  directly{!waLink && s.contact ? <>: <span className="font-medium text-ink">{s.contact}</span></> : "."}
+                </p>
+                {waLink && (
+                  <a href={waLink} target="_blank" rel="noreferrer" className="btn btn-primary mt-4 w-full sm:w-auto">
+                    <WhatsAppIcon /> Message me on WhatsApp
+                  </a>
+                )}
+              </>
             )}
           </div>
         </>
@@ -141,6 +158,19 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       <dt className="text-muted">{label}</dt>
       <dd className="whitespace-pre-line text-right font-medium">{children}</dd>
     </div>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 20l1.2-3.6A8 8 0 1 1 8 19.1L4 20Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

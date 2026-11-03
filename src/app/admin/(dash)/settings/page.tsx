@@ -34,7 +34,16 @@ export default async function SettingsPage() {
           <Text label="Headline" name="tagline" defaultValue={s.tagline} wide hint="The big line at the top of your page." />
           <Text label="Description" name="serviceDescription" defaultValue={s.serviceDescription} wide />
           <Area label="Address" name="address" defaultValue={s.address} hint="Included in confirmations and reminders." />
-          <Text label="Contact" name="contact" defaultValue={s.contact} hint="e.g. WhatsApp 06 12345678, for last-minute changes." />
+          <Text label="Contact" name="contact" defaultValue={s.contact} hint="Shown with your address, e.g. “Ring the top bell”." />
+          <Text
+            label="WhatsApp number"
+            name="whatsapp"
+            type="tel"
+            inputMode="tel"
+            defaultValue={s.whatsapp}
+            placeholder="06 12345678"
+            hint="Friends get a button to message you, e.g. for last-minute changes."
+          />
         </Group>
 
         <Group title="The appointment">
@@ -93,6 +102,10 @@ export default async function SettingsPage() {
           Subscribe once and every booking appears in your phone&rsquo;s calendar, updating by itself.
           On iPhone tap Subscribe. In Google Calendar choose &ldquo;Other calendars → From URL&rdquo; and
           paste the link. Keep it private.
+        </p>
+        <p className="mt-2 max-w-[560px] text-[14px] text-muted">
+          Google Calendar only checks for changes every few hours; Apple is quicker. The email alert for
+          each booking arrives straight away, so rely on that for last-minute ones.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <input readOnly value={feed} className="input tabular !text-[13px] text-muted" aria-label="Calendar feed URL" />

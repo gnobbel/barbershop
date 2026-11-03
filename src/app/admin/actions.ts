@@ -8,9 +8,10 @@ import { db } from "@/db";
 import { settings, timeOff, weeklyHours } from "@/db/schema";
 import type { ActionState } from "@/components/BookingFlow";
 import { endSession, passwordMatches, requireAdmin, startSession } from "@/lib/auth";
-import { cancelBooking, createBooking } from "@/lib/bookings";
+import { cancelBooking, createBooking, moveBookingByBarber } from "@/lib/bookings";
 import { getSettings } from "@/lib/data";
-import { parseLocal, timeToMinutes } from "@/lib/slots";
+import { dateKey, localDateParts, parseLocal, timeToMinutes } from "@/lib/slots";
+import { whatsappNumber } from "@/lib/whatsapp";
 
 // ── Session ────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,28 @@ export async function adminCancelAction(
   const notify = formData ? formData.get("notify") !== "off" : true;
   const result = await cancelBooking({ id }, { byBarber: true, notify });
   if (!result.ok) return { error: result.error };
+  revalidatePath("/admin");
+  return { error: null };
+}
+
+export async function adminMoveAction(
+  id: string,
+  _: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireAdmin();
+  const date = String(formData.get("date") ?? "");
+  const time = timeToMinutes(String(formData.get("time") ?? ""));
+  const values = { date, time: String(formData.get("time") ?? "") };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || time === null) {
+    return { error: "Pick a date and time.", values };
+  }
+  const s = await getSettings();
+  const startAt = parseLocal(date, time, s.timezone);
+  if (startAt.getTime() < Date.now()) return { error: "That time has already passed.", values };
+
+  const result = await moveBookingByBarber(id, startAt, { notify: formData.get("notify") === "on" });
+  if (!result.ok) return { error: result.error, values };
   revalidatePath("/admin");
   return { error: null };
 }
@@ -140,6 +163,24 @@ export async function addTimeOffAction(_: ActionState, formData: FormData): Prom
   return { error: null };
 }
 
+/** One-tap time off from the dashboard: the rest of today, or all of tomorrow. */
+export async function quickBlockAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const which = formData.get("which") === "tomorrow" ? "tomorrow" : "today";
+  const s = await getSettings();
+  const now = new Date();
+  const today = localDateParts(now, s.timezone);
+  const todayKey = dateKey(today.y, today.m, today.d);
+  const tomorrowKey = dateKey(today.y, today.m, today.d + 1);
+
+  const startAt = which === "today" ? now : parseLocal(tomorrowKey, 0, s.timezone);
+  const endAt = parseLocal(which === "today" ? todayKey : tomorrowKey, 24 * 60, s.timezone);
+  await db.insert(timeOff).values({ startAt, endAt, note: which === "today" ? "Off tonight" : "Day off" });
+  revalidatePath("/admin");
+  revalidatePath("/admin/availability");
+  return { error: null };
+}
+
 export async function removeTimeOffAction(id: number) {
   await requireAdmin();
   await db.delete(timeOff).where(eq(timeOff.id, id));
@@ -177,6 +218,7 @@ const settingsSchema = z.object({
     .refine((tz) => Intl.supportedValuesOf("timeZone").includes(tz) || tz === "UTC", "Unknown timezone."),
   address: z.string().trim().max(300),
   contact: z.string().trim().max(120),
+  whatsapp: z.string().trim().max(30),
   bookingOpen: z.preprocess((v) => v === "on", z.boolean()),
 });
 
@@ -186,6 +228,9 @@ export async function saveSettingsAction(_: ActionState, formData: FormData): Pr
   const parsed = settingsSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   const { price, ...rest } = parsed.data;
+  if (rest.whatsapp && !whatsappNumber(rest.whatsapp, rest.timezone)) {
+    return { error: "Write the WhatsApp number in full, e.g. 06 12345678 or +31 6 12345678." };
+  }
   await db
     .update(settings)
     .set({ ...rest, pricePence: price })

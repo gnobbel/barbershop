@@ -33,6 +33,8 @@ export const settings = pgTable("settings", {
   timezone: text("timezone").notNull().default("Europe/Amsterdam"),
   address: text("address").notNull().default(""),
   contact: text("contact").notNull().default(""),
+  /** The barber's own number, for "Message me on WhatsApp" buttons. */
+  whatsapp: text("whatsapp").notNull().default(""),
   bookingOpen: boolean("booking_open").notNull().default(true),
 });
 

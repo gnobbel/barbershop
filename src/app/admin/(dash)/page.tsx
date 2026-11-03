@@ -3,10 +3,17 @@ import { db } from "@/db";
 import { bookings, type Booking } from "@/db/schema";
 import { ActionForm, Submit } from "@/components/ActionForm";
 import { CancelButton } from "@/components/CancelButton";
+import { MoveButton } from "@/components/MoveButton";
 import { getSettings } from "@/lib/data";
 import { formatDayLong, formatDayShort, formatTime } from "@/lib/format";
 import { dateKey, localDateParts } from "@/lib/slots";
-import { adminCancelAction, adminCreateBookingAction } from "../actions";
+import { whatsappNumber, whatsappUrl } from "@/lib/whatsapp";
+import {
+  adminCancelAction,
+  adminCreateBookingAction,
+  adminMoveAction,
+  quickBlockAction,
+} from "../actions";
 
 export const metadata = { title: "Appointments" };
 
@@ -67,6 +74,24 @@ export default async function Dashboard() {
           </p>
         </div>
       )}
+
+      <ActionForm
+        action={quickBlockAction}
+        successMessage="Blocked. Booked appointments stay; undo under Availability."
+        className="card mt-3 px-4 py-3.5 sm:px-5"
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <p className="mr-auto text-[14px] font-semibold">Not cutting?</p>
+          <div className="flex gap-2">
+            <Submit name="which" value="today" pendingLabel="Blocking…" className="btn btn-secondary btn-sm">
+              Block rest of today
+            </Submit>
+            <Submit name="which" value="tomorrow" pendingLabel="Blocking…" className="btn btn-secondary btn-sm">
+              Block tomorrow
+            </Submit>
+          </div>
+        </div>
+      </ActionForm>
 
       <details className="card group mt-6 overflow-hidden">
         <summary className="flex min-h-[60px] cursor-pointer list-none items-center justify-between gap-4 px-5 [&::-webkit-details-marker]:hidden">
@@ -150,6 +175,10 @@ export default async function Dashboard() {
 }
 
 function AppointmentCard({ b, tz }: { b: Booking; tz: string }) {
+  const local = localDateParts(b.startAt, tz);
+  const wa = b.phone ? whatsappNumber(b.phone, tz) : null;
+  const firstName = b.name.split(" ")[0];
+  const waText = `Hi ${firstName}! About your appointment on ${formatDayShort(b.startAt, tz)} at ${formatTime(b.startAt, tz)}: `;
   return (
     <li className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5">
       <div className="flex min-w-0 flex-1 gap-4">
@@ -165,6 +194,11 @@ function AppointmentCard({ b, tz }: { b: Booking; tz: string }) {
                 {b.phone}
               </a>
             )}
+            {wa && (
+              <a href={whatsappUrl(wa, waText)} target="_blank" rel="noreferrer" className="link font-medium text-go">
+                WhatsApp
+              </a>
+            )}
             {b.email && (
               <a href={`mailto:${b.email}`} className="link break-all">
                 {b.email}
@@ -176,7 +210,13 @@ function AppointmentCard({ b, tz }: { b: Booking; tz: string }) {
           )}
         </div>
       </div>
-      <div className="-mb-1 -mt-2 flex justify-end sm:m-0 sm:shrink-0">
+      <div className="-mb-1 -mt-2 flex flex-wrap justify-end gap-1 sm:m-0 sm:shrink-0">
+        <MoveButton
+          action={adminMoveAction.bind(null, b.id)}
+          date={dateKey(local.y, local.m, local.d)}
+          time={formatTime(b.startAt, tz)}
+          hasEmail={!!b.email}
+        />
         <CancelButton
           action={adminCancelAction.bind(null, b.id)}
           label="Cancel"

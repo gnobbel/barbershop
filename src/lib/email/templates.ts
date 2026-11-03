@@ -2,6 +2,7 @@ import type { Booking, Settings } from "@/db/schema";
 import { siteUrl } from "@/lib/env";
 import { formatDateTime, formatDuration, formatPrice, formatTime } from "@/lib/format";
 import { buildIcs, googleCalendarUrl, sequenceFor } from "@/lib/ics";
+import { whatsappNumber, whatsappUrl } from "@/lib/whatsapp";
 import type { EmailMessage } from "./send";
 
 const C = {
@@ -113,8 +114,20 @@ function calendarEvent(b: Booking, s: Settings) {
   };
 }
 
+/** How to reach the barber directly: WhatsApp if set, else the contact line. */
+function directContact(s: Settings) {
+  return s.whatsapp ? `WhatsApp ${s.whatsapp}` : s.contact;
+}
+
+function whatsappAction(s: Settings, b: Booking) {
+  const wa = s.whatsapp ? whatsappNumber(s.whatsapp, s.timezone) : null;
+  if (!wa) return [];
+  const text = `Hi! It's ${b.name.split(" ")[0]}, about my appointment on ${formatDateTime(b.startAt, s.timezone)}: `;
+  return [{ label: "WhatsApp me", href: whatsappUrl(wa, text) }];
+}
+
 function cutoffNote(s: Settings) {
-  const contact = s.contact ? ` (${s.contact})` : "";
+  const contact = directContact(s) ? ` (${directContact(s)})` : "";
   return `Plans change. You can reschedule or cancel online up to ${s.cancelCutoffHours} hours before; after that, please message me directly${contact}.`;
 }
 
@@ -181,9 +194,9 @@ export function reminderEmail(b: Booking, s: Settings): EmailMessage {
       heading: "See you tomorrow",
       intro,
       rows: appointmentRows(b, s),
-      actions: [{ label: "View booking", href: manageUrl(b), primary: true }],
-      footnote: s.contact
-        ? `Running late or can't make it? Message me at ${s.contact}.`
+      actions: [{ label: "View booking", href: manageUrl(b), primary: true }, ...whatsappAction(s, b)],
+      footnote: directContact(s)
+        ? `Running late or can't make it? Message me at ${directContact(s)}.`
         : "Running late or can't make it? Just let me know.",
     }),
     text: text([

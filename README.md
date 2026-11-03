@@ -8,20 +8,25 @@ A small, private booking site for a barber who cuts for friends. You set your ho
 - Pick a day, pick a time, and leave a name, phone and email.
 - A confirmation email arrives with a calendar invite (`.ics`), a Google Calendar link and a personal "manage booking" link.
 - **A reminder arrives 24 hours before** the appointment.
-- From the manage link they can reschedule or cancel up to a cutoff you choose (12 hours by default).
+- From the manage link they can reschedule or cancel up to a cutoff you choose (12 hours by default). After that, a button opens a WhatsApp chat with you.
 
 **For you**, at `/admin` (password protected):
-- **Appointments:** today and upcoming, grouped by day, with tap-to-call phone numbers. You can cancel an appointment (the friend is emailed) or add one by hand for someone who texted you.
+- **Appointments:** today and upcoming, grouped by day, with tap-to-call and WhatsApp links. You can:
+  - move an appointment to another time, optionally emailing the friend the new time,
+  - cancel one (the friend is emailed),
+  - add one by hand for someone who texted you,
+  - block the rest of today or all of tomorrow in one tap.
 - **Availability:**
   - Weekly hours, including several ranges in a day (e.g. a lunch break).
   - Time off for holidays or a blocked evening.
   - A live count of open slots.
 - **Settings:**
-  - Name, tagline, address and contact.
+  - Name, tagline, address, contact and your WhatsApp number.
   - Haircut length, break between cuts and price.
   - Minimum notice, how far ahead people can book, the change cutoff and timezone.
   - A switch to pause bookings.
 - **A calendar feed:** subscribe once and every booking shows up in your phone's calendar.
+- **An app icon:** add `/admin` to your phone's home screen and it opens like an app.
 - **An email to you** on every new booking, reschedule and cancellation.
 
 **Behind the scenes:**
