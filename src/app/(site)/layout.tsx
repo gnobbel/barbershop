@@ -1,15 +1,30 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { getSettings, loadSlotInput } from "@/lib/data";
+import { getCurrentSlotInput, getSettings } from "@/lib/data";
+import { siteUrl } from "@/lib/env";
 import { formatTime, initials, relativeDay } from "@/lib/format";
 import { generateSlots } from "@/lib/slots";
 import { HeaderStatus } from "@/components/HeaderStatus";
 
 export const dynamic = "force-dynamic";
 
+/** Titles and link previews (WhatsApp, iMessage) carry the business name. */
+export async function generateMetadata(): Promise<Metadata> {
+  const s = await getSettings();
+  const description = [s.tagline, s.serviceDescription].filter(Boolean).join(" ");
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: { absolute: s.businessName, template: `%s · ${s.businessName}` },
+    description,
+    appleWebApp: { capable: true, title: s.businessName, statusBarStyle: "default" },
+    openGraph: { type: "website", siteName: s.businessName, title: s.businessName, description },
+  };
+}
+
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const s = await getSettings();
   const now = new Date();
-  const next = s.bookingOpen ? generateSlots(await loadSlotInput(s, now))[0]?.slots[0] : undefined;
+  const next = s.bookingOpen ? generateSlots(await getCurrentSlotInput())[0]?.slots[0] : undefined;
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -25,9 +40,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             <>
               <span className="dot" aria-hidden />
               <span>
-                <span className="text-muted">
-                  Next<span className="hidden sm:inline"> opening</span>{" "}
-                </span>
+                <span className="sr-only sm:not-sr-only sm:text-muted">Next opening </span>
                 <span className="tabular">
                   {relativeDay(next, s.timezone, now)} {formatTime(next, s.timezone)}
                 </span>

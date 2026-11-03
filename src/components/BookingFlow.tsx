@@ -265,26 +265,48 @@ function DateRow({
         }}
         className="no-scrollbar -mx-5 flex min-w-0 flex-1 snap-x snap-mandatory scroll-px-5 gap-2 overflow-x-auto px-5 lg:mx-0 lg:scroll-px-0 lg:px-0"
       >
-        {days.map((d) => (
-          <li key={d.date} className="snap-start">
-            <button
-              type="button"
-              onClick={() => onSelect(d.date)}
-              aria-pressed={d.date === selected}
-              aria-label={`${d.label}, ${d.slots.length} times available`}
-              className="tile flex h-[68px] w-[72px] flex-col items-center justify-center gap-0.5"
-            >
-              <span className="text-[13px] font-medium opacity-70">{d.weekdayShort}</span>
-              <span className="tabular whitespace-nowrap text-[15px] font-semibold">
-                {d.day} {d.monthShort}
-              </span>
-            </button>
-          </li>
-        ))}
+        {days.map((d, i) => {
+          const prev = days[i - 1];
+          const newMonth = !!prev && prev.monthShort !== d.monthShort;
+          // Extra space between weeks, so skipped (closed or full) days read as gaps in a week.
+          const newWeek = !!prev && weekOf(d.date) !== weekOf(prev.date);
+          return [
+            newMonth && (
+              <li
+                key={`${d.date}-month`}
+                aria-hidden
+                className="flex shrink-0 items-center pl-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-faint [writing-mode:vertical-rl] rotate-180"
+              >
+                {d.monthShort}
+              </li>
+            ),
+            <li key={d.date} className={`snap-start ${newWeek && !newMonth ? "pl-2.5" : ""}`}>
+              <button
+                type="button"
+                onClick={() => onSelect(d.date)}
+                aria-pressed={d.date === selected}
+                aria-label={`${d.label}, ${d.slots.length} times available`}
+                className="tile flex h-[68px] w-[72px] flex-col items-center justify-center gap-0.5"
+              >
+                <span className="text-[13px] font-medium opacity-70">{d.weekdayShort}</span>
+                <span className="tabular whitespace-nowrap text-[15px] font-semibold">
+                  {d.day} {d.monthShort}
+                </span>
+              </button>
+            </li>,
+          ];
+        })}
       </ul>
       <ArrowButton dir={1} disabled={edges.end} onClick={() => page(1)} />
     </div>
   );
+}
+
+/** Monday of the week containing a yyyy-MM-dd date, as a day number. */
+function weekOf(date: string) {
+  const day = Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10)) / 86_400_000;
+  // 1970-01-01 was a Thursday, so day 4 was a Monday.
+  return day - ((day - 4 + 7 * 1000) % 7);
 }
 
 function ArrowButton({ dir, disabled, onClick }: { dir: 1 | -1; disabled: boolean; onClick: () => void }) {
