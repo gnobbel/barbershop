@@ -4,6 +4,11 @@ name: Appointment reminders
 # reminder endpoint every 15 minutes instead. Needs two repository secrets:
 #   SITE_URL     e.g. https://your-site.vercel.app
 #   CRON_SECRET  the same value as the CRON_SECRET env var on Vercel
+#
+# GitHub pauses scheduled workflows after 60 days without a push, and runs
+# can start late. vercel.json also calls the same endpoint once a day as a
+# backup, so reminders keep going out (a little less precisely) if this stops.
+# Re-enable it from the Actions tab if GitHub has paused it.
 on:
   schedule:
     - cron: "*/15 * * * *"
