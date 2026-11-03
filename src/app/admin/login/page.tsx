@@ -3,7 +3,7 @@ import { getSettings } from "@/lib/data";
 import { initials } from "@/lib/format";
 import { loginAction } from "../actions";
 
-export const metadata = { title: "Sign in" };
+export const metadata = { title: "Inloggen" };
 
 export default async function Login() {
   const s = await getSettings();
@@ -17,11 +17,11 @@ export default async function Login() {
           <p className="title text-[17px]">{s.businessName}</p>
         </div>
         <div className="card p-6 sm:p-8">
-          <h1 className="headline text-[30px]">Welcome back</h1>
-          <p className="mt-1.5 text-muted">Sign in to manage your appointments.</p>
+          <h1 className="headline text-[30px]">Welkom terug</h1>
+          <p className="mt-1.5 text-muted">Log in om je afspraken te beheren.</p>
           <ActionForm action={loginAction} className="mt-7 space-y-4">
             <label className="block">
-              <span className="label mb-1.5">Password</span>
+              <span className="label mb-1.5">Wachtwoord</span>
               <input
                 type="password"
                 name="password"
@@ -31,8 +31,8 @@ export default async function Login() {
                 className="input"
               />
             </label>
-            <Submit pendingLabel="Signing in…" className="btn btn-primary btn-lg w-full">
-              Sign in
+            <Submit pendingLabel="Inloggen…" className="btn btn-primary btn-lg w-full">
+              Inloggen
             </Submit>
           </ActionForm>
         </div>

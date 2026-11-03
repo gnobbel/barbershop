@@ -38,7 +38,8 @@ export function ActionForm({
         onSubmit={(e) => {
           e.preventDefault();
           submitted.current = true;
-          const data = new FormData(e.currentTarget);
+          // Include the pressed button's name/value, like a native submit would.
+          const data = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
           startTransition(() => formAction(data));
         }}
       >
@@ -64,16 +65,21 @@ export function ActionForm({
 
 export function Submit({
   children,
-  pendingLabel = "Saving…",
+  pendingLabel = "Opslaan…",
   className = "btn btn-primary",
+  name,
+  value,
 }: {
   children: React.ReactNode;
   pendingLabel?: string;
   className?: string;
+  /** Sent with the form when this button is the one pressed. */
+  name?: string;
+  value?: string;
 }) {
   const pending = useContext(PendingContext);
   return (
-    <button type="submit" disabled={pending} className={className}>
+    <button type="submit" name={name} value={value} disabled={pending} className={className}>
       {pending ? pendingLabel : children}
     </button>
   );

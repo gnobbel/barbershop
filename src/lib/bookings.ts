@@ -18,8 +18,7 @@ export const MAX_UPCOMING_PER_EMAIL = 2;
 
 export type BookingResult = { ok: true; booking: Booking } | { ok: false; error: string };
 
-const SLOT_TAKEN =
-  "Sorry, that time was just taken. Please choose another.";
+const SLOT_TAKEN = "Sorry, die tijd is net vergeven. Kies een andere.";
 
 function isOverlapError(err: unknown): boolean {
   const codes = [err, (err as { cause?: unknown })?.cause].map(
@@ -57,7 +56,7 @@ export async function createBooking(
   const now = new Date();
 
   if (!opts.byAdmin) {
-    if (!s.bookingOpen) return { ok: false, error: "Bookings are paused at the moment." };
+    if (!s.bookingOpen) return { ok: false, error: "Afspraken maken staat op dit moment stil." };
     if (!isSlotAvailable(await loadSlotInput(s, now), input.startAt)) {
       return { ok: false, error: SLOT_TAKEN };
     }
@@ -75,7 +74,7 @@ export async function createBooking(
       if (count >= MAX_UPCOMING_PER_EMAIL) {
         return {
           ok: false,
-          error: `You already have ${count} upcoming appointments. Please keep those or change one from the link in your confirmation email.`,
+          error: `Je hebt al ${count} afspraken staan. Houd die aan, of verzet er een via de link in je bevestigingsmail.`,
         };
       }
     }
@@ -99,7 +98,7 @@ export async function createBooking(
     if (isOverlapError(err)) {
       return {
         ok: false,
-        error: opts.byAdmin ? "That time overlaps an existing appointment." : SLOT_TAKEN,
+        error: opts.byAdmin ? "Die tijd overlapt met een andere afspraak." : SLOT_TAKEN,
       };
     }
     throw err;
@@ -116,9 +115,9 @@ export async function rescheduleBooking(token: string, startAt: Date): Promise<B
   const s = await getSettings();
   const now = new Date();
   const current = await getBookingByToken(token);
-  if (!current) return { ok: false, error: "Booking not found." };
+  if (!current) return { ok: false, error: "Afspraak niet gevonden." };
   if (!clientCanChange(current, s, now)) {
-    return { ok: false, error: "This appointment can no longer be changed online." };
+    return { ok: false, error: "Deze afspraak kun je niet meer online verzetten." };
   }
   const input = await loadSlotInput(s, now, { excludeBookingId: current.id });
   if (!isSlotAvailable(input, startAt)) return { ok: false, error: SLOT_TAKEN };
@@ -139,12 +138,51 @@ export async function rescheduleBooking(token: string, startAt: Date): Promise<B
     if (isOverlapError(err)) return { ok: false, error: SLOT_TAKEN };
     throw err;
   }
-  if (!booking) return { ok: false, error: "This appointment is no longer active." };
+  if (!booking) return { ok: false, error: "Deze afspraak staat niet meer." };
 
   await Promise.all([
     booking.email ? sendEmail(confirmationEmail(booking, s, true)) : null,
     alertAdmin("rescheduled", booking, s),
   ]);
+  return { ok: true, booking };
+}
+
+/**
+ * The barber moves an appointment to any free time, inside opening hours or
+ * not. Only overlaps with other appointments are refused.
+ */
+export async function moveBookingByBarber(
+  id: string,
+  startAt: Date,
+  opts: { notify: boolean },
+): Promise<BookingResult> {
+  const s = await getSettings();
+  const [current] = await db.select().from(bookings).where(eq(bookings.id, id));
+  if (!current || current.status !== "confirmed") {
+    return { ok: false, error: "Deze afspraak staat niet meer." };
+  }
+  const length = current.endAt.getTime() - current.startAt.getTime();
+
+  let booking: Booking | undefined;
+  try {
+    [booking] = await db
+      .update(bookings)
+      .set({
+        startAt,
+        endAt: new Date(startAt.getTime() + length),
+        // Without a fresh confirmation, keep the old one as the reference for reminders.
+        ...(opts.notify && current.email ? { confirmedAt: new Date() } : {}),
+        reminderSentAt: null,
+      })
+      .where(and(eq(bookings.id, id), eq(bookings.status, "confirmed")))
+      .returning();
+  } catch (err) {
+    if (isOverlapError(err)) return { ok: false, error: "Die tijd overlapt met een andere afspraak." };
+    throw err;
+  }
+  if (!booking) return { ok: false, error: "Deze afspraak staat niet meer." };
+
+  if (opts.notify && booking.email) await sendEmail(confirmationEmail(booking, s, true));
   return { ok: true, booking };
 }
 
@@ -157,9 +195,9 @@ export async function cancelBooking(
 
   if (!opts.byBarber) {
     const current = "token" in where ? await getBookingByToken(where.token) : null;
-    if (!current) return { ok: false, error: "Booking not found." };
+    if (!current) return { ok: false, error: "Afspraak niet gevonden." };
     if (!clientCanChange(current, s)) {
-      return { ok: false, error: "This appointment can no longer be cancelled online." };
+      return { ok: false, error: "Deze afspraak kun je niet meer online annuleren." };
     }
   }
 
@@ -168,7 +206,7 @@ export async function cancelBooking(
     .set({ status: "cancelled", cancelledAt: new Date() })
     .where(and(filter, eq(bookings.status, "confirmed")))
     .returning();
-  if (!booking) return { ok: false, error: "This appointment is already cancelled." };
+  if (!booking) return { ok: false, error: "Deze afspraak is al geannuleerd." };
 
   const notifyClient = opts.notify ?? true;
   await Promise.all([
@@ -204,7 +242,7 @@ export async function sendDueReminders(now = new Date()) {
   let sent = 0;
   let failed = 0;
   for (const b of due) {
-    if (await sendEmail(reminderEmail(b, s))) {
+    if (await sendEmail(reminderEmail(b, s, now))) {
       sent++;
     } else {
       failed++;

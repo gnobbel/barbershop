@@ -4,10 +4,10 @@ export default function NotFound() {
   return (
     <div className="mx-auto max-w-[480px] py-12 text-center">
       <span className="pill mb-5">404</span>
-      <h1 className="headline text-[40px]">Nothing here</h1>
-      <p className="mt-3 text-muted">The link may be mistyped, or the booking no longer exists.</p>
+      <h1 className="headline text-[40px]">Niets te vinden</h1>
+      <p className="mt-3 text-muted">Misschien klopt de link niet, of bestaat de afspraak niet meer.</p>
       <Link href="/#book" className="btn btn-primary btn-lg mt-8">
-        Book an appointment
+        Afspraak maken
       </Link>
     </div>
   );

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 export function ShareLink({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
-  const message = `Book a haircut with me here: ${url}`;
+  const message = `Hier kun je een afspraak bij me inplannen om te knippen: ${url}`;
   return (
     <div className="flex gap-2">
       <button
@@ -16,11 +16,11 @@ export function ShareLink({ url }: { url: string }) {
             setCopied(true);
             setTimeout(() => setCopied(false), 1800);
           } catch {
-            window.prompt("Copy your booking link:", url);
+            window.prompt("Kopieer je link:", url);
           }
         }}
       >
-        {copied ? "Copied" : "Copy link"}
+        {copied ? "Gekopieerd" : "Kopieer link"}
       </button>
       <a
         href={`https://wa.me/?text=${encodeURIComponent(message)}`}
@@ -28,7 +28,7 @@ export function ShareLink({ url }: { url: string }) {
         rel="noreferrer"
         className="btn btn-primary btn-sm"
       >
-        Share on WhatsApp
+        Deel via WhatsApp
       </a>
     </div>
   );

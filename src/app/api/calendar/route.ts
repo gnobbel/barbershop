@@ -25,7 +25,7 @@ export async function GET(req: Request) {
       start: b.startAt,
       end: b.endAt,
       summary: `✂ ${b.name}`,
-      description: [b.phone && `Phone: ${b.phone}`, b.email && `Email: ${b.email}`, b.notes]
+      description: [b.phone && `Telefoon: ${b.phone}`, b.email && `E-mail: ${b.email}`, b.notes]
         .filter(Boolean)
         .join("\n"),
       sequence: sequenceFor(b.confirmedAt),

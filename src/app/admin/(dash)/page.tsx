@@ -3,12 +3,19 @@ import { db } from "@/db";
 import { bookings, type Booking } from "@/db/schema";
 import { ActionForm, Submit } from "@/components/ActionForm";
 import { CancelButton } from "@/components/CancelButton";
+import { MoveButton } from "@/components/MoveButton";
 import { getSettings } from "@/lib/data";
-import { formatDayLong, formatDayShort, formatTime } from "@/lib/format";
+import { capitalize, formatDayLong, formatDayShort, formatTime } from "@/lib/format";
 import { dateKey, localDateParts } from "@/lib/slots";
-import { adminCancelAction, adminCreateBookingAction } from "../actions";
+import { whatsappNumber, whatsappUrl } from "@/lib/whatsapp";
+import {
+  adminCancelAction,
+  adminCreateBookingAction,
+  adminMoveAction,
+  quickBlockAction,
+} from "../actions";
 
-export const metadata = { title: "Appointments" };
+export const metadata = { title: "Afspraken" };
 
 const DAY = 24 * 60 * 60_000;
 
@@ -46,19 +53,19 @@ export default async function Dashboard() {
 
   return (
     <div className="fade-in">
-      <h1 className="headline text-[34px] sm:text-[40px]">Appointments</h1>
+      <h1 className="headline text-[34px] sm:text-[40px]">Afspraken</h1>
 
       <dl className="mt-6 grid grid-cols-3 gap-3">
-        <Stat label="Today" value={groups.get(todayKey)?.length ?? 0} />
-        <Stat label="Next 7 days" value={upcoming.filter((b) => b.startAt.getTime() < weekEnd).length} />
-        <Stat label="Upcoming" value={upcoming.length} />
+        <Stat label="Vandaag" value={groups.get(todayKey)?.length ?? 0} />
+        <Stat label="7 dagen" value={upcoming.filter((b) => b.startAt.getTime() < weekEnd).length} />
+        <Stat label="Gepland" value={upcoming.length} />
       </dl>
 
       {next && (
         <div className="mt-3 flex items-center gap-3 rounded-[16px] bg-white px-4 py-3.5 text-[14px] ring-1 ring-line">
           <span className="dot shrink-0" aria-hidden />
           <p className="min-w-0">
-            <span className="text-muted">Next up </span>
+            <span className="text-muted">Hierna </span>
             <span className="font-semibold">{next.name}</span>
             <span className="tabular text-muted">
               {" "}
@@ -68,9 +75,27 @@ export default async function Dashboard() {
         </div>
       )}
 
+      <ActionForm
+        action={quickBlockAction}
+        successMessage="Geblokkeerd. Geboekte afspraken blijven staan; terugdraaien kan bij Tijden."
+        className="card mt-3 px-4 py-3.5 sm:px-5"
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <p className="mr-auto text-[14px] font-semibold">Even niet knippen?</p>
+          <div className="flex gap-2">
+            <Submit name="which" value="today" pendingLabel="Bezig…" className="btn btn-secondary btn-sm">
+              Rest van vandaag vrij
+            </Submit>
+            <Submit name="which" value="tomorrow" pendingLabel="Bezig…" className="btn btn-secondary btn-sm">
+              Morgen vrij
+            </Submit>
+          </div>
+        </div>
+      </ActionForm>
+
       <details className="card group mt-6 overflow-hidden">
         <summary className="flex min-h-[60px] cursor-pointer list-none items-center justify-between gap-4 px-5 [&::-webkit-details-marker]:hidden">
-          <span className="title text-[16px]">Add a booking by hand</span>
+          <span className="title text-[16px]">Zelf een afspraak toevoegen</span>
           <span className="grid h-8 w-8 place-items-center rounded-full bg-chip text-[18px] leading-none transition-transform group-open:rotate-45">
             +
           </span>
@@ -78,23 +103,23 @@ export default async function Dashboard() {
         <ActionForm
           action={adminCreateBookingAction}
           resetOnSuccess
-          successMessage="Booked. If you added an email, a confirmation has gone out."
+          successMessage="Ingepland. Met een e-mailadres erbij is er een bevestiging verstuurd."
           className="border-t border-line px-5 pb-6 pt-5"
         >
           <p className="mb-5 max-w-[560px] text-[14px] text-muted">
-            For friends who text you. Any time works, even outside your hours, as long as it doesn&rsquo;t
-            overlap another appointment. Email is optional; without one, no emails are sent.
+            Voor vrienden die je appen. Elke tijd kan, ook buiten je openingstijden, zolang het niet overlapt
+            met een andere afspraak. E-mail is optioneel; zonder e-mailadres worden er geen mails verstuurd.
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Input label="Name" name="name" required />
-            <Input label="Date" name="date" type="date" required />
-            <Input label="Time" name="time" type="time" required step={300} />
-            <Input label="Phone" name="phone" type="tel" />
-            <Input label="Email" name="email" type="email" />
-            <Input label="Notes" name="notes" />
+            <Input label="Naam" name="name" required />
+            <Input label="Datum" name="date" type="date" required />
+            <Input label="Tijd" name="time" type="time" required step={300} />
+            <Input label="Telefoon" name="phone" type="tel" />
+            <Input label="E-mail" name="email" type="email" />
+            <Input label="Opmerkingen" name="notes" />
           </div>
           <div className="mt-5">
-            <Submit pendingLabel="Booking…">Add booking</Submit>
+            <Submit pendingLabel="Inplannen…">Afspraak toevoegen</Submit>
           </div>
         </ActionForm>
       </details>
@@ -102,17 +127,17 @@ export default async function Dashboard() {
       <section className="mt-10">
         {groups.size === 0 ? (
           <div className="card px-6 py-14 text-center">
-            <p className="title text-[20px]">Your diary is clear</p>
-            <p className="mt-1.5 text-muted">No upcoming appointments yet. Share your booking link.</p>
+            <p className="title text-[20px]">Je agenda is leeg</p>
+            <p className="mt-1.5 text-muted">Nog geen afspraken gepland. Deel je link.</p>
           </div>
         ) : (
           <div className="space-y-9">
             {[...groups.entries()].map(([key, list]) => (
               <div key={key}>
                 <div className="mb-3 flex items-center gap-2.5">
-                  <h2 className="title text-[18px]">{formatDayLong(list[0].startAt, s.timezone)}</h2>
-                  {key === todayKey && <span className="pill !bg-ink !text-white">Today</span>}
-                  {key === tomorrowKey && <span className="pill">Tomorrow</span>}
+                  <h2 className="title text-[18px]">{capitalize(formatDayLong(list[0].startAt, s.timezone))}</h2>
+                  {key === todayKey && <span className="pill !bg-ink !text-white">Vandaag</span>}
+                  {key === tomorrowKey && <span className="pill">Morgen</span>}
                 </div>
                 <ul className="space-y-2.5">
                   {list.map((b) => (
@@ -127,14 +152,14 @@ export default async function Dashboard() {
 
       {recent.length > 0 && (
         <section className="mt-14">
-          <h2 className="title mb-3 text-[18px]">Past two weeks</h2>
+          <h2 className="title mb-3 text-[18px]">Afgelopen twee weken</h2>
           <ul className="card divide-y divide-line px-5 text-[14px]">
             {recent.map((b) => (
               <li key={b.id} className="tabular flex flex-wrap items-center justify-between gap-x-6 gap-y-1 py-3.5">
                 <span className="flex items-center gap-2">
                   <span className="font-medium">{b.name}</span>
                   {b.status === "cancelled" && (
-                    <span className="pill !bg-danger-soft !py-0.5 !text-[12px] !text-danger">Cancelled</span>
+                    <span className="pill !bg-danger-soft !py-0.5 !text-[12px] !text-danger">Geannuleerd</span>
                   )}
                 </span>
                 <span className="text-muted">
@@ -150,12 +175,16 @@ export default async function Dashboard() {
 }
 
 function AppointmentCard({ b, tz }: { b: Booking; tz: string }) {
+  const local = localDateParts(b.startAt, tz);
+  const wa = b.phone ? whatsappNumber(b.phone, tz) : null;
+  const firstName = b.name.split(" ")[0];
+  const waText = `Hoi ${firstName}! Over je afspraak op ${formatDayLong(b.startAt, tz)} om ${formatTime(b.startAt, tz)}: `;
   return (
     <li className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5">
       <div className="flex min-w-0 flex-1 gap-4">
         <div className="tabular w-[64px] shrink-0 self-start rounded-[12px] bg-chip px-2 py-2.5 text-center">
           <p className="text-[17px] font-bold leading-none">{formatTime(b.startAt, tz)}</p>
-          <p className="mt-1 text-[11px] text-muted">to {formatTime(b.endAt, tz)}</p>
+          <p className="mt-1 text-[11px] text-muted">tot {formatTime(b.endAt, tz)}</p>
         </div>
         <div className="min-w-0">
           <p className="title text-[16px]">{b.name}</p>
@@ -163,6 +192,11 @@ function AppointmentCard({ b, tz }: { b: Booking; tz: string }) {
             {b.phone && (
               <a href={`tel:${b.phone.replace(/\s/g, "")}`} className="link">
                 {b.phone}
+              </a>
+            )}
+            {wa && (
+              <a href={whatsappUrl(wa, waText)} target="_blank" rel="noreferrer" className="link font-medium text-go">
+                WhatsApp
               </a>
             )}
             {b.email && (
@@ -176,12 +210,18 @@ function AppointmentCard({ b, tz }: { b: Booking; tz: string }) {
           )}
         </div>
       </div>
-      <div className="-mb-1 -mt-2 flex justify-end sm:m-0 sm:shrink-0">
+      <div className="-mb-1 -mt-2 flex flex-wrap justify-end gap-1 sm:m-0 sm:shrink-0">
+        <MoveButton
+          action={adminMoveAction.bind(null, b.id)}
+          date={dateKey(local.y, local.m, local.d)}
+          time={formatTime(b.startAt, tz)}
+          hasEmail={!!b.email}
+        />
         <CancelButton
           action={adminCancelAction.bind(null, b.id)}
-          label="Cancel"
+          label="Annuleren"
           variant="quiet"
-          confirmText={b.email ? "Cancel & email them?" : "Cancel this?"}
+          confirmText={b.email ? "Annuleren en een mail sturen?" : "Deze afspraak annuleren?"}
         />
       </div>
     </li>

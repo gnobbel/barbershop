@@ -1,10 +1,12 @@
 import "server-only";
+import { cache } from "react";
 import { and, asc, eq, gt, lt, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, settings, timeOff, weeklyHours, type Settings } from "@/db/schema";
 import type { SlotInput } from "./slots";
 
-export async function getSettings(): Promise<Settings> {
+/** Cached per request: layouts, pages and metadata all ask for it. */
+export const getSettings = cache(async function getSettings(): Promise<Settings> {
   const [row] = await db.select().from(settings).where(eq(settings.id, 1));
   if (row) return row;
   const [created] = await db
@@ -13,7 +15,7 @@ export async function getSettings(): Promise<Settings> {
     .onConflictDoNothing()
     .returning();
   return created ?? (await db.select().from(settings).where(eq(settings.id, 1)))[0];
-}
+});
 
 export async function getWeeklyHours() {
   return db
@@ -21,6 +23,9 @@ export async function getWeeklyHours() {
     .from(weeklyHours)
     .orderBy(asc(weeklyHours.weekday), asc(weeklyHours.startMin));
 }
+
+/** Open slots as of this request, shared by the header and the booking page. */
+export const getCurrentSlotInput = cache(async () => loadSlotInput(await getSettings(), new Date()));
 
 /** Everything needed to compute open slots from `now`. */
 export async function loadSlotInput(

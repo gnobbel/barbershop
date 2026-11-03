@@ -19,10 +19,10 @@ export default async function DashLayout({ children }: { children: React.ReactNo
         <div className="flex items-center gap-2">
           <Link href="/" className="btn btn-secondary btn-sm">
             <span className="sm:hidden">Site</span>
-            <span className="hidden sm:inline">View site</span>
+            <span className="hidden sm:inline">Bekijk site</span>
           </Link>
           <form action={logoutAction}>
-            <button className="btn btn-secondary btn-sm">Sign out</button>
+            <button className="btn btn-secondary btn-sm">Uitloggen</button>
           </form>
         </div>
       </header>

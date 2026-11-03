@@ -3,7 +3,16 @@ import { db } from "@/db";
 import { timeOff } from "@/db/schema";
 import { ActionForm, Submit } from "@/components/ActionForm";
 import { getSettings, getWeeklyHours, loadSlotInput } from "@/lib/data";
-import { formatDayLong, formatDayShort, formatTime, relativeDay, WEEKDAY_ORDER, WEEKDAYS } from "@/lib/format";
+import {
+  capitalize,
+  formatDayLong,
+  formatDayShort,
+  formatTime,
+  relativeDay,
+  WEEKDAY_ORDER,
+  WEEKDAYS,
+  WEEKDAYS_SHORT,
+} from "@/lib/format";
 import { generateSlots, minutesToTime } from "@/lib/slots";
 import {
   addHoursAction,
@@ -12,7 +21,7 @@ import {
   removeTimeOffAction,
 } from "../../actions";
 
-export const metadata = { title: "Availability" };
+export const metadata = { title: "Tijden" };
 
 export default async function Availability() {
   const s = await getSettings();
@@ -29,22 +38,22 @@ export default async function Availability() {
   return (
     <div className="fade-in space-y-12">
       <div>
-        <h1 className="headline text-[34px] sm:text-[40px]">Availability</h1>
+        <h1 className="headline text-[34px] sm:text-[40px]">Tijden</h1>
         <p className="mt-2 max-w-[580px] text-muted">
-          Set your regular weekly hours, then block off exceptions. Friends see {s.durationMin}-minute
-          slots with {s.bufferMin} minutes between them, from {s.minNoticeHours} hours ahead up to{" "}
-          {s.windowDays} days out.
+          Stel je vaste weektijden in en blokkeer daarna uitzonderingen. Vrienden zien plekken van{" "}
+          {s.durationMin} minuten met {s.bufferMin} minuten ertussen, vanaf {s.minNoticeHours} uur van
+          tevoren tot {s.windowDays} dagen vooruit.
         </p>
         <div className="mt-5 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[16px] bg-white px-4 py-3 text-[14px] ring-1 ring-line">
           <span className={`dot ${openSlots ? "" : "!bg-faint !shadow-none"}`} aria-hidden />
           <span className="tabular font-semibold">
-            {openSlots} open {openSlots === 1 ? "slot" : "slots"}
+            {openSlots} {openSlots === 1 ? "plek" : "plekken"} vrij
           </span>
           <span className="text-muted">
-            across {days.length} {days.length === 1 ? "day" : "days"}
+            verdeeld over {days.length} {days.length === 1 ? "dag" : "dagen"}
             {first && (
               <>
-                {" "}· next <span className="tabular font-medium text-ink">{relativeDay(first, s.timezone, now)} {formatTime(first, s.timezone)}</span>
+                {" "}· eerstvolgende <span className="tabular font-medium text-ink">{relativeDay(first, s.timezone, now)} {formatTime(first, s.timezone)}</span>
               </>
             )}
           </span>
@@ -54,7 +63,7 @@ export default async function Availability() {
       {/* Weekly hours */}
       <section className="grid gap-5 lg:grid-cols-[1fr_340px] lg:gap-8">
         <div>
-          <h2 className="title mb-3 text-[18px]">Weekly hours</h2>
+          <h2 className="title mb-3 text-[18px]">Vaste tijden</h2>
           <ul className="card divide-y divide-line px-5">
             {WEEKDAY_ORDER.map((wd) => {
               const ranges = hours.filter((h) => h.weekday === wd);
@@ -71,7 +80,7 @@ export default async function Availability() {
                         >
                           {minutesToTime(h.startMin)}–{minutesToTime(h.endMin)}
                           <button
-                            aria-label={`Remove ${WEEKDAYS[wd]} ${minutesToTime(h.startMin)}–${minutesToTime(h.endMin)}`}
+                            aria-label={`${WEEKDAYS[wd]} ${minutesToTime(h.startMin)}–${minutesToTime(h.endMin)} verwijderen`}
                             className="grid h-7 w-7 cursor-pointer place-items-center rounded-full text-muted transition-colors hover:bg-white hover:text-danger"
                           >
                             <XIcon />
@@ -80,7 +89,7 @@ export default async function Availability() {
                       ))}
                     </div>
                   ) : (
-                    <span className="text-[14px] text-faint">Closed</span>
+                    <span className="text-[14px] text-faint">Gesloten</span>
                   )}
                 </li>
               );
@@ -89,15 +98,15 @@ export default async function Availability() {
         </div>
 
         <ActionForm action={addHoursAction} resetOnSuccess className="card self-start p-5 lg:mt-[40px]">
-          <h3 className="title text-[16px]">Add hours</h3>
+          <h3 className="title text-[16px]">Tijden toevoegen</h3>
           <fieldset className="mt-4">
-            <legend className="label mb-2">Days</legend>
+            <legend className="label mb-2">Dagen</legend>
             <div className="grid grid-cols-7 gap-1.5">
               {WEEKDAY_ORDER.map((wd) => (
                 <label key={wd} className="cursor-pointer">
                   <input type="checkbox" name="weekday" value={wd} className="peer sr-only" />
                   <span className="tile grid h-11 place-items-center text-[13px] font-semibold peer-checked:border-ink peer-checked:bg-ink peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink">
-                    {WEEKDAYS[wd].slice(0, 2)}
+                    {WEEKDAYS_SHORT[wd]}
                   </span>
                 </label>
               ))}
@@ -105,16 +114,16 @@ export default async function Availability() {
           </fieldset>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="label mb-1.5">From</span>
+              <span className="label mb-1.5">Van</span>
               <input type="time" name="start" required defaultValue="10:00" step={300} className="input" />
             </label>
             <label className="block">
-              <span className="label mb-1.5">To</span>
+              <span className="label mb-1.5">Tot</span>
               <input type="time" name="end" required defaultValue="18:00" step={300} className="input" />
             </label>
           </div>
-          <Submit pendingLabel="Adding…" className="btn btn-primary mt-5 w-full">
-            Add hours
+          <Submit pendingLabel="Toevoegen…" className="btn btn-primary mt-5 w-full">
+            Tijden toevoegen
           </Submit>
         </ActionForm>
       </section>
@@ -122,7 +131,7 @@ export default async function Availability() {
       {/* Time off */}
       <section className="grid gap-5 lg:grid-cols-[1fr_340px] lg:gap-8">
         <div>
-          <h2 className="title mb-3 text-[18px]">Time off</h2>
+          <h2 className="title mb-3 text-[18px]">Vrij</h2>
           {off.length ? (
             <ul className="card divide-y divide-line px-5">
               {off.map((t) => (
@@ -132,51 +141,51 @@ export default async function Availability() {
                     {t.note && <p className="text-[14px] text-muted">{t.note}</p>}
                   </div>
                   <form action={removeTimeOffAction.bind(null, t.id)}>
-                    <button className="btn btn-secondary btn-sm">Remove</button>
+                    <button className="btn btn-secondary btn-sm">Verwijderen</button>
                   </form>
                 </li>
               ))}
             </ul>
           ) : (
             <div className="card px-5 py-8 text-center text-[14px] text-muted">
-              Nothing blocked off. Add holidays or evenings you&rsquo;re unavailable.
+              Niets geblokkeerd. Voeg vakanties of avonden toe waarop je niet kunt.
             </div>
           )}
         </div>
 
         <ActionForm action={addTimeOffAction} resetOnSuccess className="card self-start p-5 lg:mt-[40px]">
-          <h3 className="title text-[16px]">Block off time</h3>
+          <h3 className="title text-[16px]">Tijd blokkeren</h3>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="label mb-1.5">From date</span>
+              <span className="label mb-1.5">Vanaf datum</span>
               <input type="date" name="from" required className="input" />
             </label>
             <label className="block">
-              <span className="label mb-1.5">To date <span className="font-normal text-faint">· opt.</span></span>
+              <span className="label mb-1.5">Tot en met <span className="font-normal text-faint">· opt.</span></span>
               <input type="date" name="to" className="input" />
             </label>
             <label className="block">
               <span className="label mb-1.5">
-                Start time <span className="font-normal text-faint">· opt.</span>
+                Begintijd <span className="font-normal text-faint">· opt.</span>
               </span>
               <input type="time" name="fromTime" step={300} className="input" />
             </label>
             <label className="block">
               <span className="label mb-1.5">
-                End time <span className="font-normal text-faint">· opt.</span>
+                Eindtijd <span className="font-normal text-faint">· opt.</span>
               </span>
               <input type="time" name="toTime" step={300} className="input" />
             </label>
           </div>
           <label className="mt-3 block">
-            <span className="label mb-1.5">Note</span>
-            <input name="note" placeholder="Holiday, wedding…" maxLength={120} className="input" />
+            <span className="label mb-1.5">Notitie</span>
+            <input name="note" placeholder="Vakantie, bruiloft…" maxLength={120} className="input" />
           </label>
           <p className="mt-3 text-[13px] leading-relaxed text-faint">
-            Leave times empty to block whole days. Existing bookings stay as they are.
+            Laat de tijden leeg om hele dagen te blokkeren. Bestaande afspraken blijven staan.
           </p>
-          <Submit pendingLabel="Saving…" className="btn btn-primary mt-5 w-full">
-            Block off
+          <Submit pendingLabel="Opslaan…" className="btn btn-primary mt-5 w-full">
+            Blokkeren
           </Submit>
         </ActionForm>
       </section>
@@ -201,7 +210,7 @@ function describeRange(start: Date, end: Date, tz: string) {
   const endDay = formatDayShort(lastMoment, tz);
   const wholeDays = startTime === "00:00" && endTime === "00:00";
   if (wholeDays) {
-    return startDay === endDay ? `${formatDayLong(start, tz)}, all day` : `${startDay} – ${endDay}`;
+    return startDay === endDay ? `${capitalize(formatDayLong(start, tz))}, hele dag` : `${startDay} – ${endDay}`;
   }
   if (startDay === formatDayShort(end, tz)) return `${startDay}, ${startTime}–${endTime}`;
   return `${startDay} ${startTime} – ${formatDayShort(end, tz)} ${endTime}`;

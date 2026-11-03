@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ADD COLUMN "whatsapp" text DEFAULT '' NOT NULL;

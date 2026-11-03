@@ -16,13 +16,11 @@ import { sql } from "drizzle-orm";
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey().default(1),
   businessName: text("business_name").notNull().default("The Chair"),
-  tagline: text("tagline")
-    .notNull()
-    .default("Sharp cuts, no rush."),
-  serviceName: text("service_name").notNull().default("Haircut"),
+  tagline: text("tagline").notNull().default("Strak geknipt, zonder haast."),
+  serviceName: text("service_name").notNull().default("Knipbeurt"),
   serviceDescription: text("service_description")
     .notNull()
-    .default("A consultation, a precise cut and a clean finish."),
+    .default("Even overleggen, precies knippen en netjes afwerken."),
   durationMin: integer("duration_min").notNull().default(45),
   bufferMin: integer("buffer_min").notNull().default(15),
   pricePence: integer("price_pence").notNull().default(0),
@@ -33,6 +31,8 @@ export const settings = pgTable("settings", {
   timezone: text("timezone").notNull().default("Europe/Amsterdam"),
   address: text("address").notNull().default(""),
   contact: text("contact").notNull().default(""),
+  /** The barber's own number, for "Message me on WhatsApp" buttons. */
+  whatsapp: text("whatsapp").notNull().default(""),
   bookingOpen: boolean("booking_open").notNull().default(true),
 });
 

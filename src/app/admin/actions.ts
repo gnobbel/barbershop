@@ -8,9 +8,10 @@ import { db } from "@/db";
 import { settings, timeOff, weeklyHours } from "@/db/schema";
 import type { ActionState } from "@/components/BookingFlow";
 import { endSession, passwordMatches, requireAdmin, startSession } from "@/lib/auth";
-import { cancelBooking, createBooking } from "@/lib/bookings";
+import { cancelBooking, createBooking, moveBookingByBarber } from "@/lib/bookings";
 import { getSettings } from "@/lib/data";
-import { parseLocal, timeToMinutes } from "@/lib/slots";
+import { dateKey, localDateParts, parseLocal, timeToMinutes } from "@/lib/slots";
+import { whatsappNumber } from "@/lib/whatsapp";
 
 // ── Session ────────────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
   // A small fixed delay makes password guessing slow.
   await new Promise((r) => setTimeout(r, 400));
   if (!passwordMatches(String(formData.get("password") ?? ""))) {
-    return { error: "That password isn't right." };
+    return { error: "Dat wachtwoord klopt niet." };
   }
   await startSession();
   redirect("/admin");
@@ -44,18 +45,40 @@ export async function adminCancelAction(
   return { error: null };
 }
 
+export async function adminMoveAction(
+  id: string,
+  _: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireAdmin();
+  const date = String(formData.get("date") ?? "");
+  const time = timeToMinutes(String(formData.get("time") ?? ""));
+  const values = { date, time: String(formData.get("time") ?? "") };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || time === null) {
+    return { error: "Kies een datum en tijd.", values };
+  }
+  const s = await getSettings();
+  const startAt = parseLocal(date, time, s.timezone);
+  if (startAt.getTime() < Date.now()) return { error: "Die tijd is al voorbij.", values };
+
+  const result = await moveBookingByBarber(id, startAt, { notify: formData.get("notify") === "on" });
+  if (!result.ok) return { error: result.error, values };
+  revalidatePath("/admin");
+  return { error: null };
+}
+
 const manualSchema = z.object({
-  name: z.string().trim().min(1, "Add a name.").max(80),
+  name: z.string().trim().min(1, "Vul een naam in.").max(80),
   email: z
     .string()
     .trim()
     .toLowerCase()
     .transform((v) => v || null)
-    .pipe(z.email("Check the email.").nullable()),
+    .pipe(z.email("Controleer het e-mailadres.").nullable()),
   phone: z.string().trim().max(30).default(""),
   notes: z.string().trim().max(500).default(""),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date."),
-  time: z.string().regex(/^\d{2}:\d{2}$/, "Pick a time."),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Kies een datum."),
+  time: z.string().regex(/^\d{2}:\d{2}$/, "Kies een tijd."),
 });
 
 export async function adminCreateBookingAction(
@@ -71,7 +94,7 @@ export async function adminCreateBookingAction(
   );
   const parsed = manualSchema.safeParse(raw);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the form.", values: raw };
+    return { error: parsed.error.issues[0]?.message ?? "Controleer het formulier.", values: raw };
   }
   const s = await getSettings();
   const { date, time, ...rest } = parsed.data;
@@ -89,15 +112,15 @@ export async function addHoursAction(_: ActionState, formData: FormData): Promis
   const weekdays = formData.getAll("weekday").map(Number).filter((d) => d >= 0 && d <= 6);
   const start = timeToMinutes(String(formData.get("start") ?? ""));
   const end = timeToMinutes(String(formData.get("end") ?? ""));
-  if (!weekdays.length) return { error: "Choose at least one day." };
-  if (start === null || end === null) return { error: "Enter a start and end time." };
-  if (end <= start) return { error: "The end time must be after the start time." };
+  if (!weekdays.length) return { error: "Kies minstens één dag." };
+  if (start === null || end === null) return { error: "Vul een begin- en eindtijd in." };
+  if (end <= start) return { error: "De eindtijd moet na de begintijd liggen." };
 
   const existing = await db.select().from(weeklyHours);
   const clash = weekdays.find((wd) =>
     existing.some((h) => h.weekday === wd && start < h.endMin && h.startMin < end),
   );
-  if (clash !== undefined) return { error: "That overlaps hours you already have on one of those days." };
+  if (clash !== undefined) return { error: "Dat overlapt met tijden die je op een van die dagen al hebt." };
 
   await db.insert(weeklyHours).values(weekdays.map((weekday) => ({ weekday, startMin: start, endMin: end })));
   revalidatePath("/admin/availability");
@@ -121,11 +144,11 @@ export async function addTimeOffAction(_: ActionState, formData: FormData): Prom
   const values = { from, to, fromTime, toTime, note };
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
-    return { error: "Choose the dates.", values };
+    return { error: "Kies de datums.", values };
   }
   const startMin = fromTime ? timeToMinutes(fromTime) : 0;
   const endMin = toTime ? timeToMinutes(toTime) : null;
-  if (startMin === null || (toTime && endMin === null)) return { error: "Check the times.", values };
+  if (startMin === null || (toTime && endMin === null)) return { error: "Controleer de tijden.", values };
 
   const startAt = parseLocal(from, startMin, s.timezone);
   // No end time means "through the end of that day".
@@ -133,9 +156,27 @@ export async function addTimeOffAction(_: ActionState, formData: FormData): Prom
     endMin === null
       ? parseLocal(to, 24 * 60, s.timezone)
       : parseLocal(to, endMin, s.timezone);
-  if (endAt <= startAt) return { error: "The end must be after the start.", values };
+  if (endAt <= startAt) return { error: "Het einde moet na het begin liggen.", values };
 
   await db.insert(timeOff).values({ startAt, endAt, note });
+  revalidatePath("/admin/availability");
+  return { error: null };
+}
+
+/** One-tap time off from the dashboard: the rest of today, or all of tomorrow. */
+export async function quickBlockAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const which = formData.get("which") === "tomorrow" ? "tomorrow" : "today";
+  const s = await getSettings();
+  const now = new Date();
+  const today = localDateParts(now, s.timezone);
+  const todayKey = dateKey(today.y, today.m, today.d);
+  const tomorrowKey = dateKey(today.y, today.m, today.d + 1);
+
+  const startAt = which === "today" ? now : parseLocal(tomorrowKey, 0, s.timezone);
+  const endAt = parseLocal(which === "today" ? todayKey : tomorrowKey, 24 * 60, s.timezone);
+  await db.insert(timeOff).values({ startAt, endAt, note: which === "today" ? "Vrij vanavond" : "Vrije dag" });
+  revalidatePath("/admin");
   revalidatePath("/admin/availability");
   return { error: null };
 }
@@ -150,33 +191,35 @@ export async function removeTimeOffAction(id: number) {
 
 const int = (min: number, max: number, label: string) =>
   z.coerce
-    .number({ message: `${label} must be a number.` })
-    .int(`${label} must be a whole number.`)
-    .min(min, `${label} must be at least ${min}.`)
-    .max(max, `${label} must be at most ${max}.`);
+    .number({ message: `${label} moet een getal zijn.` })
+    .int(`${label} moet een heel getal zijn.`)
+    .min(min, `${label} moet minstens ${min} zijn.`)
+    .max(max, `${label} mag hoogstens ${max} zijn.`);
 
 const settingsSchema = z.object({
-  businessName: z.string().trim().min(1, "Add a name.").max(60),
+  businessName: z.string().trim().min(1, "Vul een naam in.").max(60),
   tagline: z.string().trim().max(140),
-  serviceName: z.string().trim().min(1, "Name the service.").max(60),
+  serviceName: z.string().trim().min(1, "Geef de behandeling een naam.").max(60),
   serviceDescription: z.string().trim().max(300),
-  durationMin: int(10, 240, "Duration"),
-  bufferMin: int(0, 120, "Buffer"),
+  durationMin: int(10, 240, "Duur"),
+  bufferMin: int(0, 120, "Pauze"),
   price: z
     .string()
     .trim()
-    .regex(/^\d*(\.\d{1,2})?$/, "Price should look like 20 or 22.50.")
+    .transform((v) => v.replace(",", "."))
+    .pipe(z.string().regex(/^\d*(\.\d{1,2})?$/, "Schrijf de prijs als 20 of 22,50."))
     .transform((v) => Math.round(Number(v || 0) * 100)),
-  currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "Currency is a 3-letter code, e.g. GBP."),
-  minNoticeHours: int(0, 168, "Minimum notice"),
-  windowDays: int(1, 180, "Booking window"),
-  cancelCutoffHours: int(0, 168, "Cancellation cutoff"),
+  currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "De valuta is een code van 3 letters, bijv. EUR."),
+  minNoticeHours: int(0, 168, "Minimale voorbereidingstijd"),
+  windowDays: int(1, 180, "Boekingsperiode"),
+  cancelCutoffHours: int(0, 168, "Wijzigingsgrens"),
   timezone: z
     .string()
     .trim()
-    .refine((tz) => Intl.supportedValuesOf("timeZone").includes(tz) || tz === "UTC", "Unknown timezone."),
+    .refine((tz) => Intl.supportedValuesOf("timeZone").includes(tz) || tz === "UTC", "Onbekende tijdzone."),
   address: z.string().trim().max(300),
   contact: z.string().trim().max(120),
+  whatsapp: z.string().trim().max(30),
   bookingOpen: z.preprocess((v) => v === "on", z.boolean()),
 });
 
@@ -184,8 +227,11 @@ export async function saveSettingsAction(_: ActionState, formData: FormData): Pr
   await requireAdmin();
   const raw = Object.fromEntries(formData.entries());
   const parsed = settingsSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form." };
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Controleer het formulier." };
   const { price, ...rest } = parsed.data;
+  if (rest.whatsapp && !whatsappNumber(rest.whatsapp, rest.timezone)) {
+    return { error: "Schrijf het WhatsApp-nummer helemaal uit, bijv. 06 12345678 of +31 6 12345678." };
+  }
   await db
     .update(settings)
     .set({ ...rest, pricePence: price })
