@@ -16,7 +16,7 @@ export async function rescheduleAction(
   formData: FormData,
 ): Promise<ActionState> {
   const start = new Date(String(formData.get("start") ?? ""));
-  if (Number.isNaN(start.getTime())) return { error: "Please pick a time." };
+  if (Number.isNaN(start.getTime())) return { error: "Kies een tijd." };
   const result = await rescheduleBooking(token, start);
   if (!result.ok) return { error: result.error };
   redirect(`/booking/${token}?moved=1`);

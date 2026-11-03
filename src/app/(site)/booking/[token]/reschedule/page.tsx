@@ -9,7 +9,7 @@ import { formatDayShort, formatDuration, formatPrice, formatTime } from "@/lib/f
 import { dateKey, generateSlots, localDateParts } from "@/lib/slots";
 import { rescheduleAction } from "../actions";
 
-export const metadata: Metadata = { title: "Reschedule", robots: { index: false } };
+export const metadata: Metadata = { title: "Verzetten", robots: { index: false } };
 
 export default async function Reschedule({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -37,11 +37,11 @@ export default async function Reschedule({ params }: { params: Promise<{ token: 
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
           <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        Back to your booking
+        Terug naar je afspraak
       </Link>
-      <h1 className="headline text-[34px] sm:text-[44px]">Pick a new time</h1>
+      <h1 className="headline text-[34px] sm:text-[44px]">Kies een nieuwe tijd</h1>
       <p className="mt-2 text-muted">
-        Currently{" "}
+        Nu{" "}
         <span className="tabular font-medium text-ink">
           {formatDayShort(b.startAt, s.timezone)} · {formatTime(b.startAt, s.timezone)}
         </span>
@@ -51,8 +51,8 @@ export default async function Reschedule({ params }: { params: Promise<{ token: 
           days={days}
           mode="reschedule"
           action={rescheduleAction.bind(null, token)}
-          submitLabel="Move booking"
-          shortSubmitLabel="Move"
+          submitLabel="Afspraak verzetten"
+          shortSubmitLabel="Verzetten"
           current={{ iso: b.startAt.toISOString(), date: currentDate, label: currentLabel }}
           summary={{ title: s.serviceName, meta }}
         />

@@ -51,7 +51,7 @@ function layout(opts: {
   const actions = (opts.actions ?? []).map(button).join("");
 
   const initials = s.businessName
-    .replace(/^the\s+/i, "")
+    .replace(/^(the|de|het)\s+/i, "")
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
@@ -60,7 +60,7 @@ function layout(opts: {
     .toUpperCase();
 
   return `<!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(opts.heading)}</title></head>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(opts.heading)}</title></head>
 <body style="margin:0;padding:0;background:${C.bone};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bone};">
     <tr><td align="center" style="padding:36px 14px;">
@@ -94,10 +94,10 @@ const manageUrl = (b: Booking) => `${siteUrl()}/booking/${b.manageToken}`;
 
 function appointmentRows(b: Booking, s: Settings): Row[] {
   return [
-    ["When", formatDateTime(b.startAt, s.timezone)],
-    ["Service", `${s.serviceName} · ${formatDuration(s.durationMin)}`],
-    ["Price", formatPrice(s.pricePence, s.currency)],
-    ["Where", s.address],
+    ["Wanneer", formatDateTime(b.startAt, s.timezone)],
+    ["Wat", `${s.serviceName} · ${formatDuration(s.durationMin)}`],
+    ["Prijs", formatPrice(s.pricePence, s.currency)],
+    ["Waar", s.address],
   ];
 }
 
@@ -107,7 +107,7 @@ function calendarEvent(b: Booking, s: Settings) {
     start: b.startAt,
     end: b.endAt,
     summary: `${s.serviceName} · ${s.businessName}`,
-    description: `Manage or cancel: ${manageUrl(b)}`,
+    description: `Wijzigen of annuleren: ${manageUrl(b)}`,
     location: s.address || undefined,
     url: manageUrl(b),
     sequence: sequenceFor(b.confirmedAt),
@@ -122,37 +122,37 @@ function directContact(s: Settings) {
 function whatsappAction(s: Settings, b: Booking) {
   const wa = s.whatsapp ? whatsappNumber(s.whatsapp, s.timezone) : null;
   if (!wa) return [];
-  const text = `Hi! It's ${b.name.split(" ")[0]}, about my appointment on ${formatDateTime(b.startAt, s.timezone)}: `;
-  return [{ label: "WhatsApp me", href: whatsappUrl(wa, text) }];
+  const text = `Hoi! Met ${b.name.split(" ")[0]}, over mijn afspraak op ${formatDateTime(b.startAt, s.timezone)}: `;
+  return [{ label: "Stuur een WhatsApp", href: whatsappUrl(wa, text) }];
 }
 
 function cutoffNote(s: Settings) {
   const contact = directContact(s) ? ` (${directContact(s)})` : "";
-  return `Plans change. You can reschedule or cancel online up to ${s.cancelCutoffHours} hours before; after that, please message me directly${contact}.`;
+  return `Plannen veranderen. Tot ${s.cancelCutoffHours} uur van tevoren kun je zelf online verzetten of annuleren; daarna stuur je me even een berichtje${contact}.`;
 }
 
 export function confirmationEmail(b: Booking, s: Settings, rescheduled = false): EmailMessage {
   const when = formatDateTime(b.startAt, s.timezone);
   const firstName = b.name.split(" ")[0];
-  const heading = rescheduled ? "Your new time is set" : "You're booked in";
+  const heading = rescheduled ? "Je nieuwe tijd staat vast" : "Je staat erin";
   const intro = rescheduled
-    ? `Thanks, ${firstName}. Your appointment has moved to ${when}.`
-    : `Thanks, ${firstName}. I look forward to seeing you on ${when}.`;
+    ? `Dank je, ${firstName}. Je afspraak is verzet naar ${when}.`
+    : `Dank je, ${firstName}. Tot ${when}!`;
   const event = calendarEvent(b, s);
   return {
     to: b.email!,
     subject: rescheduled
-      ? `Rescheduled: ${s.serviceName}, ${when}`
-      : `Confirmed: ${s.serviceName}, ${when}`,
+      ? `Verzet: ${s.serviceName}, ${when}`
+      : `Bevestigd: ${s.serviceName}, ${when}`,
     html: layout({
       settings: s,
-      eyebrow: rescheduled ? "Rescheduled" : "Confirmed",
+      eyebrow: rescheduled ? "Verzet" : "Bevestigd",
       heading,
       intro,
       rows: appointmentRows(b, s),
       actions: [
-        { label: "Manage booking", href: manageUrl(b), primary: true },
-        { label: "Add to Google Calendar", href: googleCalendarUrl(event) },
+        { label: "Afspraak bekijken", href: manageUrl(b), primary: true },
+        { label: "Zet in Google Agenda", href: googleCalendarUrl(event) },
       ],
       footnote: cutoffNote(s),
     }),
@@ -161,18 +161,18 @@ export function confirmationEmail(b: Booking, s: Settings, rescheduled = false):
       "",
       intro,
       "",
-      `When: ${when}`,
-      `Service: ${s.serviceName} (${formatDuration(s.durationMin)})`,
-      s.pricePence > 0 && `Price: ${formatPrice(s.pricePence, s.currency)}`,
-      s.address && `Where: ${s.address}`,
+      `Wanneer: ${when}`,
+      `Wat: ${s.serviceName} (${formatDuration(s.durationMin)})`,
+      s.pricePence > 0 && `Prijs: ${formatPrice(s.pricePence, s.currency)}`,
+      s.address && `Waar: ${s.address}`,
       "",
-      `Manage or cancel: ${manageUrl(b)}`,
+      `Wijzigen of annuleren: ${manageUrl(b)}`,
       "",
       cutoffNote(s),
     ]),
     attachments: [
       {
-        filename: "appointment.ics",
+        filename: "afspraak.ics",
         content: buildIcs([event]),
         contentType: "text/calendar; charset=utf-8; method=PUBLISH",
       },
@@ -184,30 +184,30 @@ export function reminderEmail(b: Booking, s: Settings): EmailMessage {
   const time = formatTime(b.startAt, s.timezone);
   const when = formatDateTime(b.startAt, s.timezone);
   const firstName = b.name.split(" ")[0];
-  const intro = `A gentle reminder, ${firstName}: I'll see you tomorrow at ${time}.`;
+  const intro = `Even een herinnering, ${firstName}: tot morgen om ${time}.`;
   return {
     to: b.email!,
-    subject: `Tomorrow at ${time}: ${s.serviceName}`,
+    subject: `Morgen om ${time}: ${s.serviceName}`,
     html: layout({
       settings: s,
-      eyebrow: "Reminder",
-      heading: "See you tomorrow",
+      eyebrow: "Herinnering",
+      heading: "Tot morgen",
       intro,
       rows: appointmentRows(b, s),
-      actions: [{ label: "View booking", href: manageUrl(b), primary: true }, ...whatsappAction(s, b)],
+      actions: [{ label: "Afspraak bekijken", href: manageUrl(b), primary: true }, ...whatsappAction(s, b)],
       footnote: directContact(s)
-        ? `Running late or can't make it? Message me at ${directContact(s)}.`
-        : "Running late or can't make it? Just let me know.",
+        ? `Later of lukt het niet? Laat het me weten: ${directContact(s)}.`
+        : "Later of lukt het niet? Laat het me even weten.",
     }),
     text: text([
-      "See you tomorrow",
+      "Tot morgen",
       "",
       intro,
       "",
-      `When: ${when}`,
-      s.address && `Where: ${s.address}`,
+      `Wanneer: ${when}`,
+      s.address && `Waar: ${s.address}`,
       "",
-      `Your booking: ${manageUrl(b)}`,
+      `Je afspraak: ${manageUrl(b)}`,
     ]),
   };
 }
@@ -216,22 +216,22 @@ export function cancellationEmail(b: Booking, s: Settings, byBarber: boolean): E
   const when = formatDateTime(b.startAt, s.timezone);
   const firstName = b.name.split(" ")[0];
   const intro = byBarber
-    ? `Sorry, ${firstName}. I've had to cancel your appointment on ${when}. Please pick another time that suits you.`
-    : `Your appointment on ${when} has been cancelled. Whenever you're ready, you're welcome to book again.`;
+    ? `Sorry, ${firstName}. Ik moest je afspraak op ${when} annuleren. Kies gerust een andere tijd die je uitkomt.`
+    : `Je afspraak op ${when} is geannuleerd. Je bent welkom om een nieuwe afspraak te maken wanneer het je uitkomt.`;
   return {
     to: b.email!,
-    subject: `Cancelled: ${s.serviceName}, ${when}`,
+    subject: `Geannuleerd: ${s.serviceName}, ${when}`,
     html: layout({
       settings: s,
-      eyebrow: "Cancelled",
-      heading: "Appointment cancelled",
+      eyebrow: "Geannuleerd",
+      heading: "Afspraak geannuleerd",
       intro,
-      actions: [{ label: "Book another time", href: `${siteUrl()}/#book`, primary: true }],
+      actions: [{ label: "Nieuwe afspraak maken", href: `${siteUrl()}/#book`, primary: true }],
     }),
-    text: text(["Appointment cancelled", "", intro, "", `Book again: ${siteUrl()}/`]),
+    text: text(["Afspraak geannuleerd", "", intro, "", `Nieuwe afspraak maken: ${siteUrl()}/`]),
     attachments: [
       {
-        filename: "cancelled.ics",
+        filename: "geannuleerd.ics",
         content: buildIcs(
           [{ ...calendarEvent(b, s), cancelled: true, sequence: sequenceFor(new Date()) }],
           { method: "CANCEL" },
@@ -249,13 +249,13 @@ export function adminAlertEmail(
   to: string,
 ): EmailMessage {
   const when = formatDateTime(b.startAt, s.timezone);
-  const verb = { new: "New booking", cancelled: "Cancelled", rescheduled: "Rescheduled" }[kind];
+  const verb = { new: "Nieuwe afspraak", cancelled: "Geannuleerd", rescheduled: "Verzet" }[kind];
   const rows: Row[] = [
-    ["When", when],
-    ["Name", b.name],
-    ["Email", b.email ?? ""],
-    ["Phone", b.phone],
-    ["Notes", b.notes],
+    ["Wanneer", when],
+    ["Naam", b.name],
+    ["E-mail", b.email ?? ""],
+    ["Telefoon", b.phone],
+    ["Opmerkingen", b.notes],
   ];
   return {
     to,
@@ -266,12 +266,12 @@ export function adminAlertEmail(
       heading: b.name,
       intro:
         kind === "cancelled"
-          ? `This appointment has been cancelled, and the slot is open again.`
+          ? `Deze afspraak is geannuleerd; de plek is weer vrij.`
           : kind === "rescheduled"
-            ? `This appointment has moved to a new time.`
-            : `A new appointment has been booked.`,
+            ? `Deze afspraak is naar een nieuwe tijd verzet.`
+            : `Er is een nieuwe afspraak gemaakt.`,
       rows,
-      actions: [{ label: "Open dashboard", href: `${siteUrl()}/admin`, primary: true }],
+      actions: [{ label: "Naar je afspraken", href: `${siteUrl()}/admin`, primary: true }],
     }),
     text: text([
       `${verb}: ${b.name}`,

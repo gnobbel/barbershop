@@ -65,7 +65,7 @@ export function ActionForm({
 
 export function Submit({
   children,
-  pendingLabel = "Saving…",
+  pendingLabel = "Opslaan…",
   className = "btn btn-primary",
   name,
   value,

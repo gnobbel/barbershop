@@ -2,7 +2,7 @@ import type { Settings } from "@/db/schema";
 import { BookingFlow } from "@/components/BookingFlow";
 import { getCurrentSlotInput, getSettings } from "@/lib/data";
 import { toFlowDays } from "@/lib/flow";
-import { formatDuration, formatPrice, WEEKDAY_ORDER, WEEKDAYS } from "@/lib/format";
+import { formatDuration, formatPrice, WEEKDAY_ORDER, WEEKDAYS_SHORT } from "@/lib/format";
 import { generateSlots, minutesToTime } from "@/lib/slots";
 import { whatsappNumber, whatsappUrl } from "@/lib/whatsapp";
 import { bookAction } from "./book/actions";
@@ -17,7 +17,7 @@ export default async function Home() {
   const meta = [formatDuration(s.durationMin), price].filter(Boolean).join(" · ");
 
   const hours: Hours = WEEKDAY_ORDER.map((wd) => ({
-    day: WEEKDAYS[wd].slice(0, 3),
+    day: WEEKDAYS_SHORT[wd],
     ranges: input.weeklyHours
       .filter((h) => h.weekday === wd)
       .map((h) => `${minutesToTime(h.startMin)}–${minutesToTime(h.endMin)}`),
@@ -50,7 +50,7 @@ export default async function Home() {
       {/* Booking */}
       <section
         id="book"
-        aria-label="Book an appointment"
+        aria-label="Afspraak maken"
         className="scroll-mt-6 lg:rounded-[24px] lg:border lg:border-line lg:bg-[#f9f7f3] lg:p-8 xl:p-10"
       >
         {s.bookingOpen ? (
@@ -58,14 +58,14 @@ export default async function Home() {
             days={days}
             mode="new"
             action={bookAction}
-            submitLabel="Confirm booking"
-            shortSubmitLabel="Confirm"
+            submitLabel="Afspraak bevestigen"
+            shortSubmitLabel="Bevestigen"
             summary={{ title: s.serviceName, meta }}
           />
         ) : (
           <div className="card px-6 py-14 text-center">
-            <p className="title text-[22px]">Bookings are paused</p>
-            <p className="mt-2 text-muted">Please check back soon.</p>
+            <p className="title text-[22px]">Afspraken maken staat even stil</p>
+            <p className="mt-2 text-muted">Kijk binnenkort nog eens.</p>
           </div>
         )}
       </section>
@@ -86,7 +86,7 @@ function Details({ s, hours, collapsible = false }: { s: Settings; hours: Hours;
         <div className="flex gap-3">
           <PinIcon />
           <div>
-            <dt className="sr-only">Where</dt>
+            <dt className="sr-only">Waar</dt>
             {s.address && (
               <dd className="whitespace-pre-line font-medium">
                 <a
@@ -114,12 +114,12 @@ function Details({ s, hours, collapsible = false }: { s: Settings; hours: Hours;
         <div className="flex gap-3">
           <ClockIcon />
           <div className="min-w-0 flex-1">
-            <dt className="sr-only">Opening hours</dt>
+            <dt className="sr-only">Openingstijden</dt>
             {collapsible ? (
               <dd>
                 <details className="group">
                   <summary className="flex min-h-[24px] cursor-pointer list-none items-center gap-1.5 font-medium [&::-webkit-details-marker]:hidden">
-                    Opening hours
+                    Openingstijden
                     <svg className="text-muted transition-transform group-open:rotate-180" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
                       <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
@@ -129,7 +129,7 @@ function Details({ s, hours, collapsible = false }: { s: Settings; hours: Hours;
               </dd>
             ) : (
               <dd>
-                <p className="font-medium">Opening hours</p>
+                <p className="font-medium">Openingstijden</p>
                 <HoursList hours={hours} />
               </dd>
             )}
@@ -146,7 +146,7 @@ function HoursList({ hours }: { hours: Hours }) {
       {hours.map((h) => (
         <li key={h.day} className="flex justify-between gap-4">
           <span>{h.day}</span>
-          <span className={h.ranges.length ? "" : "text-faint"}>{h.ranges.join(", ") || "Closed"}</span>
+          <span className={h.ranges.length ? "" : "text-faint"}>{h.ranges.join(", ") || "Gesloten"}</span>
         </li>
       ))}
     </ul>

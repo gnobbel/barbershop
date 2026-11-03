@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentSlotInput, getSettings } from "@/lib/data";
 import { siteUrl } from "@/lib/env";
-import { formatTime, initials, relativeDay } from "@/lib/format";
+import { capitalize, formatTime, initials, relativeDay } from "@/lib/format";
 import { generateSlots } from "@/lib/slots";
 import { HeaderStatus } from "@/components/HeaderStatus";
 
@@ -40,16 +40,18 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             <>
               <span className="dot" aria-hidden />
               <span>
-                <span className="sr-only sm:not-sr-only sm:text-muted">Next opening </span>
+                <span className="sr-only sm:not-sr-only sm:text-muted">Eerstvolgende plek </span>
                 <span className="tabular">
-                  {relativeDay(next, s.timezone, now)} {formatTime(next, s.timezone)}
+                  <span className="sm:hidden">{capitalize(relativeDay(next, s.timezone, now))}</span>
+                  <span className="hidden sm:inline">{relativeDay(next, s.timezone, now)}</span>{" "}
+                  {formatTime(next, s.timezone)}
                 </span>
               </span>
             </>
           ) : (
             <>
               <span className="dot !bg-faint !shadow-none" aria-hidden />
-              <span className="text-muted">{s.bookingOpen ? "Fully booked" : "Bookings paused"}</span>
+              <span className="text-muted">{s.bookingOpen ? "Volgeboekt" : "Gepauzeerd"}</span>
             </>
           )}
         </HeaderStatus>

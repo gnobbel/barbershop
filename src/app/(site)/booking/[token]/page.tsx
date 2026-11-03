@@ -4,12 +4,12 @@ import { notFound } from "next/navigation";
 import { CancelButton } from "@/components/CancelButton";
 import { clientCanChange, getBookingByToken } from "@/lib/bookings";
 import { getSettings } from "@/lib/data";
-import { formatDayLong, formatDuration, formatPrice, formatTime } from "@/lib/format";
+import { capitalize, formatDayLong, formatDuration, formatPrice, formatTime } from "@/lib/format";
 import { googleCalendarUrl } from "@/lib/ics";
 import { whatsappNumber, whatsappUrl } from "@/lib/whatsapp";
 import { cancelAction } from "./actions";
 
-export const metadata: Metadata = { title: "Your appointment", robots: { index: false } };
+export const metadata: Metadata = { title: "Je afspraak", robots: { index: false } };
 
 export default async function ManageBooking({
   params,
@@ -33,17 +33,17 @@ export default async function ManageBooking({
   const wa = s.whatsapp ? whatsappNumber(s.whatsapp, s.timezone) : null;
   const waLink =
     wa &&
-    whatsappUrl(wa, `Hi! It's ${firstName}, about my appointment on ${formatDayLong(b.startAt, s.timezone)} at ${formatTime(b.startAt, s.timezone)}: `);
+    whatsappUrl(wa, `Hoi! Met ${firstName}, over mijn afspraak op ${formatDayLong(b.startAt, s.timezone)} om ${formatTime(b.startAt, s.timezone)}: `);
 
   const heading = cancelled
-    ? "Appointment cancelled"
+    ? "Afspraak geannuleerd"
     : past
-      ? "Thanks for coming in"
+      ? "Bedankt voor je komst"
       : isNew
-        ? `You're booked, ${firstName}`
+        ? `Je staat erin, ${firstName}`
         : moved
-          ? "Your new time is set"
-          : `See you soon, ${firstName}`;
+          ? "Je nieuwe tijd staat vast"
+          : `Tot snel, ${firstName}`;
 
   return (
     <div className="fade-in mx-auto max-w-[560px]">
@@ -56,31 +56,31 @@ export default async function ManageBooking({
           </span>
         ) : (
           <span className={`pill mb-5 ${cancelled ? "!bg-danger-soft !text-danger" : ""}`}>
-            {cancelled ? "Cancelled" : past ? "Past appointment" : "Upcoming"}
+            {cancelled ? "Geannuleerd" : past ? "Afgelopen" : "Gepland"}
           </span>
         )}
         <h1 className="headline text-[34px] sm:text-[44px]">{heading}</h1>
         {(isNew || moved) && active && b.email && (
           <p className="mt-3 max-w-[420px] text-muted">
-            A confirmation is on its way to <span className="font-medium text-ink">{b.email}</span>.
-            You&rsquo;ll get a reminder the day before.
+            Er is een bevestiging onderweg naar <span className="font-medium text-ink">{b.email}</span>.
+            Je krijgt de dag ervoor een herinnering.
           </p>
         )}
       </div>
 
       <div className={`card mt-8 overflow-hidden ${cancelled ? "opacity-60" : ""}`}>
         <div className="border-b border-line bg-white px-5 py-5 sm:px-6">
-          <p className="title tabular text-[22px]">{formatDayLong(b.startAt, s.timezone)}</p>
+          <p className="title tabular text-[22px]">{capitalize(formatDayLong(b.startAt, s.timezone))}</p>
           <p className="tabular mt-1 flex flex-wrap items-center gap-2 text-muted">
             {formatTime(b.startAt, s.timezone)} – {formatTime(b.endAt, s.timezone)}
             <span className="pill tabular !py-0.5">{formatDuration(s.durationMin)}</span>
           </p>
         </div>
         <dl className="divide-y divide-line px-5 sm:px-6">
-          <Row label="Service">{s.serviceName}</Row>
-          {price && <Row label="Price">{price}</Row>}
-          {s.address && <Row label="Where">{s.address}</Row>}
-          <Row label="Name">{b.name}</Row>
+          <Row label="Behandeling">{s.serviceName}</Row>
+          {price && <Row label="Prijs">{price}</Row>}
+          {s.address && <Row label="Waar">{s.address}</Row>}
+          <Row label="Naam">{b.name}</Row>
         </dl>
       </div>
 
@@ -106,33 +106,33 @@ export default async function ManageBooking({
           </div>
 
           <div className="card mt-8 p-5 sm:p-6">
-            <p className="title text-[17px]">Need to change something?</p>
+            <p className="title text-[17px]">Iets veranderen?</p>
             {canChange ? (
               <>
                 <p className="mt-1 text-[14px] text-muted">
-                  You can reschedule or cancel online up to {s.cancelCutoffHours} hours before.
+                  Je kunt tot {s.cancelCutoffHours} uur van tevoren zelf verzetten of annuleren.
                 </p>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <Link href={`/booking/${token}/reschedule`} className="btn btn-primary">
-                    Reschedule
+                    Verzetten
                   </Link>
                   <CancelButton action={cancelAction.bind(null, token)} />
                 </div>
                 {waLink && (
                   <a href={waLink} target="_blank" rel="noreferrer" className="link mt-4 inline-block text-[14px] font-medium">
-                    Or message me on WhatsApp
+                    Of stuur me een WhatsApp
                   </a>
                 )}
               </>
             ) : (
               <>
                 <p className="mt-1 text-[14px] text-muted">
-                  It&rsquo;s within {s.cancelCutoffHours} hours of your appointment, so please message me
-                  directly{!waLink && s.contact ? <>: <span className="font-medium text-ink">{s.contact}</span></> : "."}
+                  Je afspraak is binnen {s.cancelCutoffHours} uur, dus stuur me even een berichtje
+                  {!waLink && s.contact ? <>: <span className="font-medium text-ink">{s.contact}</span></> : "."}
                 </p>
                 {waLink && (
                   <a href={waLink} target="_blank" rel="noreferrer" className="btn btn-primary mt-4 w-full sm:w-auto">
-                    <WhatsAppIcon /> Message me on WhatsApp
+                    <WhatsAppIcon /> Stuur me een WhatsApp
                   </a>
                 )}
               </>
@@ -144,7 +144,7 @@ export default async function ManageBooking({
       {!active && (
         <div className="mt-8 flex justify-center">
           <Link href="/#book" className="btn btn-primary btn-lg">
-            Book another time
+            Nieuwe afspraak maken
           </Link>
         </div>
       )}

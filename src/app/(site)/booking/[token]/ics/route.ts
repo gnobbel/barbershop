@@ -15,7 +15,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ token: str
       start: b.startAt,
       end: b.endAt,
       summary: `${s.serviceName} · ${s.businessName}`,
-      description: `Manage or cancel: ${manage}`,
+      description: `Wijzigen of annuleren: ${manage}`,
       location: s.address || undefined,
       url: manage,
       cancelled: b.status === "cancelled",
@@ -25,7 +25,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ token: str
   return new Response(body, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="appointment.ics"',
+      "Content-Disposition": 'attachment; filename="afspraak.ics"',
       "Cache-Control": "no-store",
     },
   });

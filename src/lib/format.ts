@@ -1,4 +1,9 @@
-const LOCALE = "en-GB";
+export const LOCALE = "nl-NL";
+
+/** "woensdag" → "Woensdag", for the start of a heading or line. */
+export function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 export function formatTime(date: Date, timeZone: string) {
   return new Intl.DateTimeFormat(LOCALE, {
@@ -18,20 +23,20 @@ function dateParts(date: Date, timeZone: string, withYear: boolean) {
     ...(withYear ? { year: "numeric" } : {}),
   }).formatToParts(date);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-  // Assembled by hand: ICU versions disagree on commas ("Sunday, 1 November").
+  // Assembled by hand: ICU versions disagree on commas ("zondag, 1 november").
   return [get("weekday"), get("day"), get("month"), withYear && get("year")]
     .filter(Boolean)
     .join(" ");
 }
 
-/** "Saturday 8 November" */
+/** "zaterdag 8 november" */
 export function formatDayLong(date: Date, timeZone: string) {
   return dateParts(date, timeZone, false);
 }
 
-/** "Saturday 8 November 2026 at 14:30" */
+/** "zaterdag 8 november 2026 om 14:30" */
 export function formatDateTime(date: Date, timeZone: string) {
-  return `${dateParts(date, timeZone, true)} at ${formatTime(date, timeZone)}`;
+  return `${dateParts(date, timeZone, true)} om ${formatTime(date, timeZone)}`;
 }
 
 /** Parts of a yyyy-MM-dd key for the date picker. The key is a plain calendar date. */
@@ -63,23 +68,17 @@ export function formatDuration(min: number) {
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
   const m = min % 60;
-  return m ? `${h} h ${m} min` : `${h} h`;
+  return m ? `${h} u ${m} min` : `${h} uur`;
 }
 
-export const WEEKDAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
+export const WEEKDAYS = ["Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
+
+export const WEEKDAYS_SHORT = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"];
 
 /** Monday-first order, as people read a week. */
 export const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-/** "Thu 15 Oct" */
+/** "do 15 okt" */
 export function formatDayShort(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat(LOCALE, {
     timeZone,
@@ -91,17 +90,17 @@ export function formatDayShort(date: Date, timeZone: string) {
   return `${get("weekday")} ${get("day")} ${get("month")}`;
 }
 
-/** "Today", "Tomorrow" or "Thu 15 Oct", judged in the barber's timezone. */
+/** "vandaag", "morgen" or "do 15 okt", judged in the barber's timezone. */
 export function relativeDay(date: Date, timeZone: string, now = new Date()) {
   const key = (d: Date) =>
     new Intl.DateTimeFormat("en-CA", { timeZone, dateStyle: "short" }).format(d);
-  if (key(date) === key(now)) return "Today";
-  if (key(date) === key(new Date(now.getTime() + 24 * 60 * 60_000))) return "Tomorrow";
+  if (key(date) === key(now)) return "vandaag";
+  if (key(date) === key(new Date(now.getTime() + 24 * 60 * 60_000))) return "morgen";
   return formatDayShort(date, timeZone);
 }
 
-/** "Atelier Noor" → "AN" */
+/** "Kapsalon Noor" → "KN" */
 export function initials(name: string) {
-  const words = name.replace(/^the\s+/i, "").split(/\s+/).filter(Boolean);
+  const words = name.replace(/^(the|de|het)\s+/i, "").split(/\s+/).filter(Boolean);
   return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? "?").slice(0, 2)).toUpperCase();
 }

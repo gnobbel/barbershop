@@ -35,7 +35,7 @@ export function MoveButton({
         onClick={() => setOpen(true)}
         className="min-h-[40px] rounded-full px-3 text-[14px] font-semibold text-muted transition-colors hover:bg-chip hover:text-ink"
       >
-        Move
+        Verzetten
       </button>
     );
   }
@@ -50,14 +50,14 @@ export function MoveButton({
         startTransition(() => formAction(data));
       }}
     >
-      <p className="px-1 pb-3 text-[14px] font-semibold">Move to</p>
+      <p className="px-1 pb-3 text-[14px] font-semibold">Verzetten naar</p>
       <div className="grid grid-cols-[1fr_auto] gap-2">
         <input
           type="date"
           name="date"
           required
           defaultValue={state.values?.date ?? date}
-          aria-label="New date"
+          aria-label="Nieuwe datum"
           className="input"
         />
         <input
@@ -66,22 +66,22 @@ export function MoveButton({
           required
           step={300}
           defaultValue={state.values?.time ?? time}
-          aria-label="New time"
+          aria-label="Nieuwe tijd"
           className="input w-[120px]"
         />
       </div>
       {hasEmail && (
         <label className="mt-3 flex cursor-pointer items-center gap-2.5 px-1 text-[14px]">
           <input type="checkbox" name="notify" defaultChecked className="h-[18px] w-[18px] accent-[var(--color-ink)]" />
-          Email them the new time
+          Stuur een mail met de nieuwe tijd
         </label>
       )}
       <div className="mt-3 grid grid-cols-2 gap-3">
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setOpen(false)}>
-          Never mind
+          Laat maar
         </button>
         <button type="submit" disabled={pending} className="btn btn-primary btn-sm">
-          {pending ? "Moving…" : "Move"}
+          {pending ? "Verzetten…" : "Verzetten"}
         </button>
       </div>
       {state.error && (

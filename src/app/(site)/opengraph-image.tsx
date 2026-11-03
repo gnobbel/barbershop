@@ -4,7 +4,7 @@ import { getSettings } from "@/lib/data";
 import { formatDuration, formatPrice, initials } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const alt = "Book an appointment";
+export const alt = "Afspraak maken";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -67,7 +67,7 @@ export default async function OpenGraphImage() {
               fontWeight: 700,
             }}
           >
-            Book online
+            Plan je afspraak
           </div>
         </div>
       </div>

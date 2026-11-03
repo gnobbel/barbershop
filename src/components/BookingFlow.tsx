@@ -25,7 +25,7 @@ type Props = {
   submitLabel: string;
   /** Shorter label for the button on phones. */
   shortSubmitLabel?: string;
-  /** e.g. { title: "Haircut", meta: "45 min · €25" } */
+  /** e.g. { title: "Knipbeurt", meta: "45 min · € 25" } */
   summary: { title: string; meta: string };
   /** Reschedule: the appointment being moved, shown and preselected. */
   current?: { iso: string; date: string; label: string };
@@ -69,9 +69,9 @@ export function BookingFlow({
   if (!days.length) {
     return (
       <div className="card px-6 py-14 text-center">
-        <p className="title text-[22px]">No openings right now</p>
+        <p className="title text-[22px]">Op dit moment geen plek</p>
         <p className="mx-auto mt-2 max-w-[320px] text-muted">
-          Every slot in the coming weeks is taken. Please check back soon.
+          Alles is vol de komende weken. Kijk binnenkort nog eens.
         </p>
       </div>
     );
@@ -91,11 +91,11 @@ export function BookingFlow({
       <section aria-labelledby="step-when">
         {mode === "new" ? (
           <StepTitle n={1} id="step-when">
-            Pick a date &amp; time
+            Kies een dag en tijd
           </StepTitle>
         ) : (
           <h2 id="step-when" className="sr-only">
-            Pick a new date and time
+            Kies een nieuwe dag en tijd
           </h2>
         )}
         <DateRow
@@ -112,7 +112,7 @@ export function BookingFlow({
             <>
               <p className="mb-3 text-[14px] text-muted">
                 <span className="font-semibold text-ink">{day.label}</span> · {day.slots.length}{" "}
-                {day.slots.length === 1 ? "time" : "times"} available
+                {day.slots.length === 1 ? "tijd" : "tijden"} vrij
               </p>
               <ul className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
                 {day.slots.map((s) => {
@@ -124,11 +124,11 @@ export function BookingFlow({
                         onClick={() => setSlot(s.iso)}
                         aria-pressed={s.iso === slot}
                         disabled={isCurrent}
-                        aria-label={isCurrent ? `${s.label}, your current time` : undefined}
+                        aria-label={isCurrent ? `${s.label}, je huidige tijd` : undefined}
                         className="tile tabular flex h-12 w-full flex-col items-center justify-center text-[15px] font-semibold disabled:cursor-default disabled:border-dashed disabled:bg-transparent disabled:text-faint"
                       >
                         {s.label}
-                        {isCurrent && <span className="text-[10px] font-semibold leading-none">Current</span>}
+                        {isCurrent && <span className="text-[10px] font-semibold leading-none">Huidig</span>}
                       </button>
                     </li>
                   );
@@ -153,12 +153,12 @@ export function BookingFlow({
         {mode === "new" && (
           <section aria-labelledby="step-details" ref={detailsRef} className="mt-12 scroll-mt-6">
             <StepTitle n={2} id="step-details">
-              Your details
+              Je gegevens
             </StepTitle>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Name" name="name" autoComplete="name" required state={state} />
+              <Field label="Naam" name="name" autoComplete="name" required state={state} />
               <Field
-                label="Phone"
+                label="Telefoon"
                 name="phone"
                 type="tel"
                 inputMode="tel"
@@ -168,26 +168,26 @@ export function BookingFlow({
               />
               <div className="sm:col-span-2">
                 <Field
-                  label="Email"
+                  label="E-mail"
                   name="email"
                   type="email"
                   inputMode="email"
                   autoComplete="email"
                   required
-                  hint="Your confirmation and reminder are sent here."
+                  hint="Hier komen je bevestiging en herinnering naartoe."
                   state={state}
                 />
               </div>
               <label className="sm:col-span-2">
                 <span className="label mb-1.5">
-                  Notes <span className="font-normal text-faint">· optional</span>
+                  Opmerkingen <span className="font-normal text-faint">· optioneel</span>
                 </span>
                 <textarea
                   name="notes"
                   defaultValue={state.values?.notes}
                   maxLength={500}
                   className="input"
-                  placeholder="The style you're after, a reference photo link…"
+                  placeholder="Welke stijl je wilt, een link naar een voorbeeldfoto…"
                 />
               </label>
               {/* Honeypot: invisible to people, irresistible to bots. */}
@@ -207,7 +207,7 @@ export function BookingFlow({
         <SummaryBar
           summary={summary}
           when={chosen && day ? `${day.weekdayShort} ${day.day} ${day.monthShort} · ${chosen.label}` : null}
-          idle={current ? `Currently ${current.label}` : "Pick a date and time"}
+          idle={current ? `Nu ${current.label}` : "Kies een dag en tijd"}
           error={state.error}
           pending={pending}
           submitLabel={submitLabel}
@@ -285,7 +285,7 @@ function DateRow({
                 type="button"
                 onClick={() => onSelect(d.date)}
                 aria-pressed={d.date === selected}
-                aria-label={`${d.label}, ${d.slots.length} times available`}
+                aria-label={`${d.label}, ${d.slots.length} ${d.slots.length === 1 ? "tijd" : "tijden"} vrij`}
                 className="tile flex h-[68px] w-[72px] flex-col items-center justify-center gap-0.5"
               >
                 <span className="text-[13px] font-medium opacity-70">{d.weekdayShort}</span>
@@ -315,7 +315,7 @@ function ArrowButton({ dir, disabled, onClick }: { dir: 1 | -1; disabled: boolea
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={dir === 1 ? "Later dates" : "Earlier dates"}
+      aria-label={dir === 1 ? "Latere dagen" : "Eerdere dagen"}
       className="hidden h-10 w-10 shrink-0 place-items-center rounded-full text-ink transition-colors hover:bg-chip disabled:cursor-default disabled:opacity-25 disabled:hover:bg-transparent lg:grid"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -373,7 +373,7 @@ function SummaryBar({
         </div>
         <button type="submit" aria-label={submitLabel} disabled={!when || pending} className="btn btn-primary shrink-0 lg:min-h-[54px] lg:px-7 lg:text-[16px]">
           {pending ? (
-            "One moment…"
+            "Even geduld…"
           ) : (
             <>
               <span className="sm:hidden">{shortSubmitLabel}</span>

@@ -2,6 +2,8 @@
 
 A small, private booking site for a barber who cuts for friends. You set your hours, and friends pick a time and book. Everyone gets the right emails.
 
+The site, the admin pages and the emails are in Dutch (informal "je"), with Dutch date and price formats. This README stays in English.
+
 ## What it does
 
 **For friends**, on the home page (`/book` also works):
@@ -110,6 +112,8 @@ Other commands: `npm test` (unit tests for slot and reminder logic) and `npm run
 | `src/lib/slots.ts` | Turns hours, time off and bookings into open slots (timezone and daylight-saving aware) |
 | `src/lib/bookings.ts` | Create, reschedule, cancel and send reminders |
 | `src/lib/email/templates.ts` | Every email |
+| `src/lib/format.ts` | Date, time and price formatting (`nl-NL`) and weekday names |
+| `src/lib/whatsapp.ts` | Turns phone numbers into WhatsApp links |
 | `src/app/(site)` | Public pages: home, booking, manage booking |
 | `src/app/admin` | Admin pages and their server actions |
 | `src/app/api/cron/reminders` | Reminder endpoint |

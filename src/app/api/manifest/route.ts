@@ -22,8 +22,9 @@ export async function GET(req: Request) {
   const manifest = {
     id: admin ? "/admin" : "/",
     name: admin ? `${s.businessName} · Admin` : s.businessName,
-    short_name: admin ? "Appointments" : s.businessName,
+    short_name: admin ? "Afspraken" : s.businessName,
     description: s.tagline,
+    lang: "nl",
     start_url: admin ? "/admin" : "/",
     scope: admin ? "/admin" : "/",
     display: "standalone",

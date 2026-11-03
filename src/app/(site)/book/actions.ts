@@ -6,16 +6,16 @@ import type { ActionState } from "@/components/BookingFlow";
 import { createBooking } from "@/lib/bookings";
 
 const schema = z.object({
-  name: z.string().trim().min(2, "Please add your name.").max(80),
-  email: z.string().trim().toLowerCase().pipe(z.email("Please check your email address.")),
+  name: z.string().trim().min(2, "Vul je naam in.").max(80),
+  email: z.string().trim().toLowerCase().pipe(z.email("Controleer je e-mailadres.")),
   phone: z
     .string()
     .trim()
-    .min(6, "Please add a phone number.")
+    .min(6, "Vul je telefoonnummer in.")
     .max(30)
-    .regex(/^[+()\d\s-]+$/, "Please check your phone number."),
+    .regex(/^[+()\d\s-]+$/, "Controleer je telefoonnummer."),
   notes: z.string().trim().max(500).default(""),
-  start: z.iso.datetime({ message: "Please pick a time." }),
+  start: z.iso.datetime({ message: "Kies een tijd." }),
 });
 
 export async function bookAction(_: ActionState, formData: FormData): Promise<ActionState> {
@@ -35,7 +35,7 @@ export async function bookAction(_: ActionState, formData: FormData): Promise<Ac
       fieldErrors[key] ??= issue.message;
     }
     return {
-      error: fieldErrors.start ?? "Please check the highlighted fields.",
+      error: fieldErrors.start ?? "Controleer de gemarkeerde velden.",
       fieldErrors,
       values,
     };

@@ -7,8 +7,8 @@ import type { ActionState } from "./BookingFlow";
 /** Two-step cancel so a stray tap never cancels an appointment. */
 export function CancelButton({
   action,
-  label = "Cancel appointment",
-  confirmText = "Cancel this appointment?",
+  label = "Afspraak annuleren",
+  confirmText = "Deze afspraak annuleren?",
   variant = "button",
 }: {
   action: (prev: ActionState) => Promise<ActionState>;
@@ -41,7 +41,7 @@ export function CancelButton({
       <p className="px-1 pb-3 text-[14px] font-semibold text-danger">{confirmText}</p>
       <div className="grid grid-cols-2 gap-3">
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setArmed(false)}>
-          Keep it
+          Laat staan
         </button>
         <Confirm />
       </div>
@@ -58,7 +58,7 @@ function Confirm() {
   const { pending } = useFormStatus();
   return (
     <button type="submit" disabled={pending} className="btn btn-danger btn-sm">
-      {pending ? "Cancelling…" : "Yes, cancel"}
+      {pending ? "Annuleren…" : "Ja, annuleer"}
     </button>
   );
 }

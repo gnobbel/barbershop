@@ -3,8 +3,8 @@ import "@fontsource-variable/plus-jakarta-sans";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Book a haircut", template: "%s · Book a haircut" },
-  description: "Haircuts by appointment.",
+  title: { default: "Afspraak maken", template: "%s · Afspraak maken" },
+  description: "Knippen op afspraak.",
   manifest: "/api/manifest",
   icons: {
     icon: [{ url: "/api/icon?size=32", sizes: "32x32", type: "image/png" }],
@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB">
+    <html lang="nl">
       <body className="min-h-dvh">{children}</body>
     </html>
   );
